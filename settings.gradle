@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "ObjectDistanceEstimatorApp"
 include ':app'
+include ':OpencvSDK'
+project(':OpencvSDK').projectDir = new File("D:\\Projects_2026\\ObjectDistanceEstimator\\OpencvSDK")

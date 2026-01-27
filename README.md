@@ -77,7 +77,7 @@ The architecture is modular, allowing easy replacement of the detection model, d
 ## 📦 Model
 
 * The object detection model is a **YOLO-based network** exported to **ONNX**.
-* Typical input size: `640 x 640`
+* Typical input size: `512 x 512`
 * The model runs fully on-device using ONNX Runtime.
 
 > Note: The ONNX model file is not included in the repository by default.
@@ -113,6 +113,14 @@ Distance estimation is based on monocular vision assumptions and camera paramete
 * [ ] Performance optimization (NNAPI / quantization)
 
 ---
+## Current Status \& Limitations
+Version 0.1.0 - Initial Release
+- The initial version detects only the 8 KITTI classes \(`Car`, `Van`, `Truck`, `Pedestrian`, `Person\_sitting`, `Cyclist`, `Tram`, `Misc`\).
+- Inference is currently executed on the CPU using ONNX Runtime Mobile.
+- Distance estimation has not been implemented yet.
+- The bounding box overlay may present positioning errors and is under active refinement.
+
+- ---
 
 ## 📄 License
 
