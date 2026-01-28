@@ -15,4 +15,5 @@ public interface ImageProcessor {
      * @return Preprocessed data as float[]
      */
     float[] preprocessBitmap(Bitmap bmp, int modelInputSize);
+
 }

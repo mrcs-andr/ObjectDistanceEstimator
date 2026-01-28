@@ -11,6 +11,12 @@ import org.tensorflow.lite.support.image.TensorImage;
 
 public class TFLitePreProcessor implements ImageProcessor {
 
+    private ILetterBoxObserver letterBoxObserver;
+
+    public TFLitePreProcessor(ILetterBoxObserver letterBoxObserver){
+        this.letterBoxObserver = letterBoxObserver;
+    }
+
     /**
      * Letterbox to (inputWidth, inputHeight) with padding color (114,114,114).
      */
@@ -32,6 +38,11 @@ public class TFLitePreProcessor implements ImageProcessor {
         Bitmap out = Bitmap.createBitmap(inputWidth, inputHeight, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(out);
         canvas.drawColor(Color.rgb(114, 114, 114));
+
+        if(this.letterBoxObserver != null){
+            LetterBoxParams params = new LetterBoxParams(r, dw, dh,w0,h0);
+            this.letterBoxObserver.onLetterBoxComputed(params);
+        }
 
         // Draw resized image centered with padding
         canvas.drawBitmap(resized, dw, dh, (Paint) null);

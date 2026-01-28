@@ -22,7 +22,9 @@ import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelObserver;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.TFLiteInterpreter;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.Detection;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.IDetectionUpdated;
+import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ILetterBoxObserver;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ImageProcessor;
+import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.LetterBoxParams;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.TFLitePreProcessor;
 import com.mrcs.andr.objectdistanceestimatorapp.ui.DetectionOverlayView;
 
@@ -31,7 +33,7 @@ import org.opencv.android.OpenCVLoader;
 import java.util.Arrays;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements IDetectionUpdated, ModelObserver {
+public class MainActivity extends AppCompatActivity implements IDetectionUpdated, ModelObserver, ILetterBoxObserver {
 
     private CameraController cameraController;
     private ModelManager modelManager;
@@ -42,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     private int frameCount = 0;
     private long windowStartNs = 0L;
     private float fps = 0f;
-
+    private PreviewView previewView;
 
     private final ActivityResultLauncher<String> cameraPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(),
@@ -68,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         TextView tvHud = findViewById(R.id.tvHud);
         this.tvLog = findViewById(R.id.tvLog);
         this.tvHud = findViewById(R.id.tvHud);
+        this.previewView = findViewById(R.id.previewView);
         ViewCompat.setOnApplyWindowInsetsListener(tvHud, (v, insets) -> {
             Insets systemBars = insets.getInsets(
                     WindowInsetsCompat.Type.systemBars()
@@ -76,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
             return insets;
         });
         requestCameraPermission();
+
     }
 
     @Override
@@ -91,9 +95,10 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     private void ensureModelAndStartCamera() {
         if (modelManager == null) {
             createModelManager();
-            PreviewView previewView = findViewById(R.id.previewView);
+
             cameraController = new CameraController(this, this, previewView,
                     this.modelManager);
+            previewView.post(()->this.detectionOverlayView.setFromPreviewView(previewView));
         }
         cameraController.start();
     }
@@ -120,7 +125,7 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
 
     private void createModelManager(){
         try{
-            ImageProcessor preProcessor = new TFLitePreProcessor();
+            ImageProcessor preProcessor = new TFLitePreProcessor(this);
             ModelInterpreter modelInterpreter = new TFLiteInterpreter(this);
             modelInterpreter.setModelObservers(List.of(this));
             this.modelManager = new ModelManager(modelInterpreter, preProcessor,
@@ -155,5 +160,16 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     @Override
     public void onModelLoaded(String modelInfo) {
         this.runOnUiThread(() -> this.tvLog.setText(modelInfo));
+    }
+
+    @Override
+    public void onLetterBoxComputed(LetterBoxParams params) {
+        if(this.detectionOverlayView != null){
+            this.runOnUiThread(() -> {
+                this.detectionOverlayView.setLetterbox(params);
+                this.detectionOverlayView.setFromPreviewView(previewView);
+            });
+
+        }
     }
 }
