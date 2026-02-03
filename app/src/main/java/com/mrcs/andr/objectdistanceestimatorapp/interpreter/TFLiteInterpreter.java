@@ -2,7 +2,9 @@ package com.mrcs.andr.objectdistanceestimatorapp.interpreter;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
-import android.util.Log;
+
+import org.tensorflow.lite.gpu.GpuDelegate;
+
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.Interpreter;
@@ -66,8 +68,19 @@ public class TFLiteInterpreter implements  ModelInterpreter{
         FileChannel fileChannel = fileInputStream.getChannel();
         MappedByteBuffer mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY,
                 fileDescriptor.getStartOffset(), fileDescriptor.getDeclaredLength());
-        this.tfLite= new Interpreter(mappedByteBuffer);
+
+        Interpreter.Options options = new Interpreter.Options();
+        options.addDelegate(new GpuDelegate());
+        options.setNumThreads(1);
+        this.tfLite= new Interpreter(mappedByteBuffer, options);
+        this.tfLite.allocateTensors();
+
+        //this.tfLite= new Interpreter(mappedByteBuffer);
         this.logModelInfo();
+
+        if (tfLite.getOutputTensorCount() == 0) {
+            throw new IllegalStateException("TFLite tensors not allocated – GPU delegate failed");
+        }
 
         Tensor.QuantizationParams q = this.tfLite.getOutputTensor(0).quantizationParams();
         float scale = q.getScale();

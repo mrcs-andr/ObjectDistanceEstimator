@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId "com.mrcs.andr.objectdistanceestimatorapp"
-        minSdk 24
+        minSdk 26
         targetSdk 36
         versionCode 1
         versionName "1.0"
@@ -56,7 +56,10 @@ dependencies {
     // Guava (ListenableFuture)
     implementation "com.google.guava:guava:31.1-android"
     //TFLite
-    implementation 'org.tensorflow:tensorflow-lite-support:0.4.0'
-    implementation 'org.tensorflow:tensorflow-lite:2.12.0'
+    implementation "org.tensorflow:tensorflow-lite:2.15.0"
+    implementation "org.tensorflow:tensorflow-lite-gpu:2.15.0"
+    implementation "org.tensorflow:tensorflow-lite-gpu-api:2.15.0"
+    implementation "org.tensorflow:tensorflow-lite-support:0.4.4"
+
     implementation project(':OpencvSDK')
 }
