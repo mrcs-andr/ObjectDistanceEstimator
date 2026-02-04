@@ -35,8 +35,6 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements IDetectionUpdated, ModelObserver, ILetterBoxObserver {
 
-    private CameraController cameraController;
-    private ModelManager modelManager;
     private DetectionOverlayView detectionOverlayView;
     private TextView tvLog;
     private TextView tvHud;
@@ -45,7 +43,11 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     private long windowStartNs = 0L;
     private float fps = 0f;
     private PreviewView previewView;
+    private AppContainer appContainer;
 
+    /**
+     * Camera Permission Launcher: ask for camera permission
+     */
     private final ActivityResultLauncher<String> cameraPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(),
                     isGranted -> {
@@ -54,6 +56,10 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
                         }
                     });
 
+    /**
+     * On Create Activity lifecycle event
+     * @param savedInstanceState saved instance state
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,7 +73,6 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
 
         setContentView(R.layout.activity_main);
         this.detectionOverlayView = findViewById(R.id.overlayView);
-        TextView tvHud = findViewById(R.id.tvHud);
         this.tvLog = findViewById(R.id.tvLog);
         this.tvHud = findViewById(R.id.tvHud);
         this.previewView = findViewById(R.id.previewView);
@@ -79,7 +84,6 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
             return insets;
         });
         requestCameraPermission();
-
     }
 
     @Override
@@ -93,14 +97,17 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     }
 
     private void ensureModelAndStartCamera() {
-        if (modelManager == null) {
-            createModelManager();
-
-            cameraController = new CameraController(this, this, previewView,
-                    this.modelManager);
+        if(this.appContainer == null){
+            try{
+                this.appContainer = new AppContainer(this, this,
+                        this, this.previewView, this);
+            } catch (Exception ex){
+                Log.e("MainActivity", "Could not create AppContainer", ex);
+                return;
+            }
             previewView.post(()->this.detectionOverlayView.setFromPreviewView(previewView));
+            this.appContainer.getCameraController().start();
         }
-        cameraController.start();
     }
 
     private void requestCameraPermission() {
@@ -115,27 +122,11 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(cameraController != null) {
-            cameraController.stop();
-        }
-        if(this.modelManager != null){
-            this.modelManager.close();
+        if(this.appContainer!= null){
+            this.appContainer.destroy();
         }
     }
 
-    private void createModelManager(){
-        try{
-            ImageProcessor preProcessor = new TFLitePreProcessor(this);
-            ModelInterpreter modelInterpreter = new TFLiteInterpreter(this);
-            modelInterpreter.setModelObservers(List.of(this));
-            this.modelManager = new ModelManager(modelInterpreter, preProcessor,
-                    this);
-            this.modelManager.loadModel("yolo11_kitti_float16.tflite");
-            Log.i("MainActivity", "Model Manager loaded successfully");
-        } catch (Exception ex){
-            Log.e("MainActivity", ex.getMessage(), ex);
-        }
-    }
 
     @Override
     public void onDetectionUpdated(List<Detection> detections) {

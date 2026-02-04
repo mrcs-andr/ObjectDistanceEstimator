@@ -34,8 +34,9 @@ public class CameraController {
     private final ExecutorService cameraExecutor = Executors.newSingleThreadExecutor();
     private final IFrameAvailableListener frameAvailableListener;
 
-    public CameraController(Context context, LifecycleOwner lifecycleOwner, PreviewView previewView,
-                            IFrameAvailableListener frameAvailableListener) {
+    public CameraController(Context context, LifecycleOwner lifecycleOwner,
+                            IFrameAvailableListener frameAvailableListener,
+                            PreviewView previewView) {
         this.context = context;
         this.lifecycleOwner = lifecycleOwner;
         this.previewView = previewView;
