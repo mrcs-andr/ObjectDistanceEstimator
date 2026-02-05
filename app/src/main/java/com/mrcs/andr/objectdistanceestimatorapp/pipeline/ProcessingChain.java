@@ -22,13 +22,12 @@ public class ProcessingChain<I, O> {
     public CompletableFuture<O> processAsync(I input) {
         CompletableFuture<Object> future = CompletableFuture.completedFuture(input);
         for (ProcessingStage<?, ?> stage : stages) {
-            ProcessingStage<Object, Object> typed = (ProcessingStage<Object, Object>) stage;
-            ProcessingNode<Object, Object> node = typed.getNode();
-            Executor executor = typed.getExecutor();
+            List<ProcessingNode<?, ?>> stageNodes = stage.getNodes();
+            Executor executor = stage.getExecutor();
             if (executor == null) {
-                future = future.thenApply(data -> applyNode(node, data));
+                future = future.thenApply(data -> applyStage(stageNodes, data));
             } else {
-                future = future.thenApplyAsync(data -> applyNode(node, data), executor);
+                future = future.thenApplyAsync(data -> applyStage(stageNodes, data), executor);
             }
         }
         return (CompletableFuture<O>) future;
@@ -65,5 +64,14 @@ public class ProcessingChain<I, O> {
         } catch (Exception ex) {
             throw new CompletionException(ex);
         }
+    }
+
+    private static Object applyStage(List<ProcessingNode<?, ?>> nodes, Object data) {
+        for (ProcessingNode<?, ?> node : nodes) {
+            @SuppressWarnings("unchecked")
+            ProcessingNode<Object, Object> typed = (ProcessingNode<Object, Object>) node;
+            data = applyNode(typed, data);
+        }
+        return data;
     }
 }
