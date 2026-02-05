@@ -16,16 +16,11 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.mrcs.andr.objectdistanceestimatorapp.camera.CameraController;
-import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelInterpreter;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelObserver;
-import com.mrcs.andr.objectdistanceestimatorapp.interpreter.TFLiteInterpreter;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.Detection;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.IDetectionUpdated;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ILetterBoxObserver;
-import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ImageProcessor;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.LetterBoxParams;
-import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.TFLitePreProcessor;
 import com.mrcs.andr.objectdistanceestimatorapp.ui.DetectionOverlayView;
 
 import org.opencv.android.OpenCVLoader;
@@ -86,6 +81,9 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         requestCameraPermission();
     }
 
+    /**
+     * On Start Activity lifecycle event
+     */
     @Override
     protected void onStart() {
         super.onStart();
@@ -96,11 +94,21 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         }
     }
 
+    /**
+     * Ensure model is loaded and start camera
+     * This method instantiates the AppContainer if it is null,
+     * sets up the detection overlay view, and starts the camera controller.
+     */
     private void ensureModelAndStartCamera() {
         if(this.appContainer == null){
             try{
-                this.appContainer = new AppContainer(this, this,
-                        this, this.previewView, this);
+                this.appContainer = new AppContainer.Builder()
+                        .setContext(this)
+                        .setLetterBoxObserver(this)
+                        .setModelObserver(this)
+                        .setPreviewView(previewView)
+                        .setDetectionUpdated(this)
+                        .build();
             } catch (Exception ex){
                 Log.e("MainActivity", "Could not create AppContainer", ex);
                 return;
@@ -110,6 +118,9 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         }
     }
 
+    /**
+     * Request camera permission if not already granted
+     */
     private void requestCameraPermission() {
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -119,6 +130,9 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         }
     }
 
+    /**
+     * On Destroy Activity lifecycle event
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -127,7 +141,10 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         }
     }
 
-
+    /**
+     * Detection updated callback, updates overlay view and FPS counter
+     * @param detections list of detections returned by the model.
+     */
     @Override
     public void onDetectionUpdated(List<Detection> detections) {
         this.runOnUiThread(() -> this.detectionOverlayView.setDetections(detections));
@@ -148,11 +165,19 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
 
     }
 
+    /**
+     * Model loaded callback, updates log text view when model is loaded.
+     * @param modelInfo information about the loaded model.
+     */
     @Override
     public void onModelLoaded(String modelInfo) {
         this.runOnUiThread(() -> this.tvLog.setText(modelInfo));
     }
 
+    /**
+     * Letterbox computed callback, updates overlay view with letterbox parameters.
+     * @param params letterbox parameters, used to adjust overlay rendering.
+     */
     @Override
     public void onLetterBoxComputed(LetterBoxParams params) {
         if(this.detectionOverlayView != null){

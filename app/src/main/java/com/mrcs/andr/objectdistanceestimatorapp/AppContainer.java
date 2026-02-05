@@ -84,5 +84,43 @@ public class AppContainer {
                 (LifecycleOwner) context, this.modelManager,previewView);
     }
 
+    public static class Builder {
+        private ILetterBoxObserver letterBoxObserver;
+        private Context context;
+        private IDetectionUpdated detectionUpdated;
+        private PreviewView previewView;
+        private ModelObserver modelObserver;
+
+        public Builder setLetterBoxObserver(ILetterBoxObserver letterBoxObserver) {
+            this.letterBoxObserver = letterBoxObserver;
+            return this;
+        }
+
+        public Builder setContext(Context context) {
+            this.context = context;
+            return this;
+        }
+
+        public Builder setDetectionUpdated(IDetectionUpdated detectionUpdated) {
+            this.detectionUpdated = detectionUpdated;
+            return this;
+        }
+
+        public Builder setPreviewView(PreviewView previewView) {
+            this.previewView = previewView;
+            return this;
+        }
+
+        public Builder setModelObserver(ModelObserver modelObserver) {
+            this.modelObserver = modelObserver;
+            return this;
+        }
+
+        public AppContainer build() throws Exception {
+            return new AppContainer(letterBoxObserver, context, detectionUpdated,
+                    previewView, modelObserver);
+        }
+    }
+
 
 }
