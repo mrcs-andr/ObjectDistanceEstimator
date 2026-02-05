@@ -23,10 +23,11 @@ public class AppContainer {
     public CameraController cameraController;
 
     public AppContainer(ILetterBoxObserver letterBoxObserver, Context context,
+                        LifecycleOwner lifecycleOwner,
                         IDetectionUpdated detectionUpdated, PreviewView previewView,
                         ModelObserver modelObserver) throws Exception {
         this.createModelManager(letterBoxObserver, context, detectionUpdated, modelObserver);
-        this.createCameraController(context, previewView);
+        this.createCameraController(context, lifecycleOwner, previewView);
     }
 
     /**
@@ -79,9 +80,9 @@ public class AppContainer {
      * Create Camera Controller instance
      * @param context application context
      */
-    private void createCameraController(Context context, PreviewView previewView){
+    private void createCameraController(Context context, LifecycleOwner lifecycleOwner, PreviewView previewView){
         this.cameraController = new CameraController(context,
-                (LifecycleOwner) context, this.modelManager,previewView);
+                lifecycleOwner, this.modelManager,previewView);
     }
 
     public static class Builder {
@@ -90,6 +91,7 @@ public class AppContainer {
         private IDetectionUpdated detectionUpdated;
         private PreviewView previewView;
         private ModelObserver modelObserver;
+        private LifecycleOwner lifecycleOwner;
 
         public Builder setLetterBoxObserver(ILetterBoxObserver letterBoxObserver) {
             this.letterBoxObserver = letterBoxObserver;
@@ -116,8 +118,25 @@ public class AppContainer {
             return this;
         }
 
+        public Builder setLifecycleOwner(LifecycleOwner lifecycleOwner) {
+            this.lifecycleOwner = lifecycleOwner;
+            return this;
+        }
+
         public AppContainer build() throws Exception {
-            return new AppContainer(letterBoxObserver, context, detectionUpdated,
+            if(letterBoxObserver == null)
+                throw new IllegalArgumentException("LetterBoxObserver is required");
+            if(context == null)
+                throw new IllegalArgumentException("Context is required");
+            if(detectionUpdated == null)
+                throw new IllegalArgumentException("DetectionUpdated is required");
+            if(previewView == null)
+                throw new IllegalArgumentException("PreviewView is required");
+            if(modelObserver == null)
+                throw new IllegalArgumentException("ModelObserver is required");
+            if(lifecycleOwner == null)
+                throw new IllegalArgumentException("LifecycleOwner is required");
+            return new AppContainer(letterBoxObserver, context, lifecycleOwner, detectionUpdated,
                     previewView, modelObserver);
         }
     }

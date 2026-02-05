@@ -108,6 +108,7 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
                         .setModelObserver(this)
                         .setPreviewView(previewView)
                         .setDetectionUpdated(this)
+                        .setLifecycleOwner(this)
                         .build();
             } catch (Exception ex){
                 Log.e("MainActivity", "Could not create AppContainer", ex);
