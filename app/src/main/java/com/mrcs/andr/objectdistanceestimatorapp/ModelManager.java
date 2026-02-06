@@ -7,6 +7,7 @@ import android.util.Log;
 import com.mrcs.andr.objectdistanceestimatorapp.camera.IFrameAvailableListener;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelInterpreter;
 import com.mrcs.andr.objectdistanceestimatorapp.pipeline.ProcessingChain;
+import com.mrcs.andr.objectdistanceestimatorapp.pipeline.ProcessingNode;
 import com.mrcs.andr.objectdistanceestimatorapp.pipeline.ProcessingStage;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.Detection;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.IDetectionUpdated;
@@ -86,11 +87,15 @@ public class ModelManager implements IFrameAvailableListener {
     private ProcessingChain<Bitmap, List<Detection>> defaultChain(Executor preProcessExecutor,
                                                                   Executor inferenceExecutor,
                                                                   Executor postProcessExecutor) {
+
+        ProcessingNode<Bitmap, float[]> preProcessNode = input -> this.preProcessor.preprocessBitmap(input, inputSize);
+        ProcessingNode<float[], float[]> inferenceNode = this.interpreter::runInference;
+        ProcessingNode<float[], List<Detection>> postProcessNode = data -> this.yoloDecoder.decode(data, inputSize);
         return new ProcessingChain<>(Arrays.asList(
-                new ProcessingStage<>(input -> this.preProcessor.preprocessBitmap(input, inputSize), preProcessExecutor),
-                new ProcessingStage<>(this.interpreter::runInference, inferenceExecutor),
-                new ProcessingStage<>(data -> this.yoloDecoder.decode(data, inputSize), postProcessExecutor)
-        ));
+                new ProcessingStage<>(preProcessNode, preProcessExecutor),
+                new ProcessingStage<>(inferenceNode, inferenceExecutor),
+                new ProcessingStage<>(postProcessNode, postProcessExecutor)));
+
     }
 
     /**

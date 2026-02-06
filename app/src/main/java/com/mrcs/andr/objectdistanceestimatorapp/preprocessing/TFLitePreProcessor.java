@@ -11,7 +11,7 @@ import org.tensorflow.lite.support.image.TensorImage;
 
 public class TFLitePreProcessor implements ImageProcessor {
 
-    private ILetterBoxObserver letterBoxObserver;
+    private final ILetterBoxObserver letterBoxObserver;
 
     public TFLitePreProcessor(ILetterBoxObserver letterBoxObserver){
         this.letterBoxObserver = letterBoxObserver;
