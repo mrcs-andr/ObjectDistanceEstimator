@@ -97,9 +97,13 @@ public class AppContainer {
         ExecutorService resolvedPostProcess = postProcessExecutor;
         ExecutorService resolvedDetection = detectionExecutor;
         if (processingChain == null) {
-            resolvedPreProcess = resolveExecutor(preProcessExecutor);
-            resolvedInference = resolveExecutor(inferenceExecutor);
-            resolvedPostProcess = resolveExecutor(postProcessExecutor);
+            ExecutorService fallback = firstNonNullExecutor(preProcessExecutor, inferenceExecutor, postProcessExecutor);
+            if (fallback == null) {
+                fallback = resolveExecutor(null);
+            }
+            resolvedPreProcess = preProcessExecutor != null ? preProcessExecutor : fallback;
+            resolvedInference = inferenceExecutor != null ? inferenceExecutor : fallback;
+            resolvedPostProcess = postProcessExecutor != null ? postProcessExecutor : fallback;
         }
         if (resolvedDetection == null) {
             resolvedDetection = resolvedPostProcess;
@@ -125,6 +129,15 @@ public class AppContainer {
         ExecutorService created = Executors.newSingleThreadExecutor();
         managedExecutors.add(created);
         return created;
+    }
+
+    private ExecutorService firstNonNullExecutor(ExecutorService... executors) {
+        for (ExecutorService executor : executors) {
+            if (executor != null) {
+                return executor;
+            }
+        }
+        return null;
     }
 
     public static class Builder {
