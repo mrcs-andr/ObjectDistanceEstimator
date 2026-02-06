@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Model Manager class to handle model loading, inference and post-processing
@@ -32,6 +33,8 @@ public class ModelManager implements IFrameAvailableListener {
     private final int inputSize;
     private final Executor detectionExecutor;
     private final AtomicBoolean isProcessing = new AtomicBoolean(false);
+    private final AtomicReference<Bitmap> pendingFrame = new AtomicReference<>();
+    private final Object frameLock = new Object();
 
     /**
      * Constructor
@@ -105,9 +108,20 @@ public class ModelManager implements IFrameAvailableListener {
      */
     @Override
     public void onFrameAvailable(Bitmap bmp) throws IOException {
-        if (!isProcessing.compareAndSet(false, true)) {
-            return;
+        synchronized (frameLock) {
+            if (isProcessing.get()) {
+                Bitmap dropped = pendingFrame.getAndSet(bmp);
+                if (dropped != null) {
+                    Log.d("ModelManager", "Dropping older pending frame");
+                }
+                return;
+            }
+            isProcessing.set(true);
         }
+        startProcessing(bmp);
+    }
+
+    private void startProcessing(Bitmap bmp) {
         this.processingChain.processAsync(bmp)
                 .thenAcceptAsync(this.detectionUpdated::onDetectionUpdated,
                         detectionExecutor == null ? command -> command.run() : detectionExecutor)
@@ -115,7 +129,16 @@ public class ModelManager implements IFrameAvailableListener {
                     if (ex != null) {
                         Log.e("ModelManager", "Error processing frame", ex);
                     }
-                    isProcessing.set(false);
+                    Bitmap next;
+                    synchronized (frameLock) {
+                        next = pendingFrame.getAndSet(null);
+                        if (next == null) {
+                            isProcessing.set(false);
+                        }
+                    }
+                    if (next != null) {
+                        startProcessing(next);
+                    }
                 });
     }
 }
