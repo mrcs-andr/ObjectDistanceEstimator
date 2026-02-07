@@ -144,8 +144,8 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
                 return;
             }
             previewView.post(()->this.detectionOverlayView.setFromPreviewView(previewView));
-            this.appContainer.getCameraController().start();
         }
+        this.appContainer.getCameraController().start();
     }
 
     /**
