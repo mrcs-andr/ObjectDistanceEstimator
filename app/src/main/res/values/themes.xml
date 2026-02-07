@@ -1,9 +1,34 @@
 <resources>
-    <style name="Theme.ObjectDistanceEstimatorApp"
-        parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Customize your theme here -->
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryDark">@color/purple_700</item>
-        <item name="colorAccent">@color/teal_200</item>
+
+    <style name="Theme.ObjectDistanceEstimatorApp" parent="Theme.AppCompat.DayNight.DarkActionBar">
+
+        <item name="actionBarSize">30dp</item>
+
+        <item name="colorPrimary">@android:color/black</item>
+        <item name="colorPrimaryDark">@android:color/black</item>
+
+        <item name="actionBarStyle">@style/MyActionBarStyle</item>
+    </style>
+
+    <style name="MyActionBarStyle" parent="Widget.AppCompat.ActionBar.Solid">
+        <item name="android:background">@android:color/black</item>
+
+        <!-- AppCompat + framework title styles (set both) -->
+        <item name="titleTextStyle">@style/MyActionBarTitleText</item>
+        <item name="android:titleTextStyle">@style/MyActionBarTitleText</item>
+
+        <!-- Optional: subtitle too -->
+        <item name="subtitleTextStyle">@style/MyActionBarSubtitleText</item>
+        <item name="android:subtitleTextStyle">@style/MyActionBarSubtitleText</item>
+    </style>
+
+    <style name="MyActionBarTitleText" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@android:color/holo_red_light</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="MyActionBarSubtitleText" parent="TextAppearance.AppCompat.Widget.ActionBar.Subtitle">
+        <item name="android:textColor">@android:color/holo_red_light</item>
+        <item name="android:textSize">10sp</item>
     </style>
 </resources>
