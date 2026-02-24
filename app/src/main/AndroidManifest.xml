@@ -21,6 +21,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".calibration.CalibrationActivity"
+            android:exported="false"
+            android:label="@string/calibration_activity_title"
+            android:theme="@style/Theme.ObjectDistanceEstimatorApp" />
     </application>
 
 </manifest>
