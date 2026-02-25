@@ -13,6 +13,7 @@ import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.Detection;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.IDetectionUpdated;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.YoloDecoder;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ImageProcessor;
+import com.mrcs.andr.objectdistanceestimatorapp.tracking.IByteTracker;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,6 +30,7 @@ public class ModelManager implements IFrameAvailableListener {
     private final ImageProcessor preProcessor;
     private final IDetectionUpdated detectionUpdated;
     private final YoloDecoder yoloDecoder;
+    private final IByteTracker tracker;
     private final ProcessingChain<Bitmap, List<Detection>> processingChain;
     private final int inputSize;
     private final Executor detectionExecutor;
@@ -43,10 +45,19 @@ public class ModelManager implements IFrameAvailableListener {
      * @param detectionUpdated Detection update callback implementation
      */
     public ModelManager(ModelInterpreter interpreter, ImageProcessor preProcessor, IDetectionUpdated detectionUpdated) {
-        this(interpreter, preProcessor, detectionUpdated, null, 512, null, null, null, null);
+        this(interpreter, preProcessor, detectionUpdated, null, null, 512, null, null, null, null);
     }
 
     public ModelManager(ModelInterpreter interpreter, ImageProcessor preProcessor, IDetectionUpdated detectionUpdated,
+                        ProcessingChain<Bitmap, List<Detection>> processingChain, int inputSize,
+                        Executor preProcessExecutor, Executor inferenceExecutor,
+                        Executor postProcessExecutor, Executor detectionExecutor) {
+        this(interpreter, preProcessor, detectionUpdated, null, processingChain, inputSize,
+                preProcessExecutor, inferenceExecutor, postProcessExecutor, detectionExecutor);
+    }
+
+    public ModelManager(ModelInterpreter interpreter, ImageProcessor preProcessor, IDetectionUpdated detectionUpdated,
+                        IByteTracker tracker,
                         ProcessingChain<Bitmap, List<Detection>> processingChain, int inputSize,
                         Executor preProcessExecutor, Executor inferenceExecutor,
                         Executor postProcessExecutor, Executor detectionExecutor) {
@@ -54,6 +65,7 @@ public class ModelManager implements IFrameAvailableListener {
         this.preProcessor = preProcessor;
         this.detectionUpdated = detectionUpdated;
         this.yoloDecoder = new YoloDecoder(12, 5376, 0.5f, 0.4f);
+        this.tracker = tracker;
         this.inputSize = inputSize > 0 ? inputSize : 512;
         this.processingChain = processingChain == null
                 ? defaultChain(preProcessExecutor, inferenceExecutor, postProcessExecutor)
@@ -94,11 +106,18 @@ public class ModelManager implements IFrameAvailableListener {
         ProcessingNode<Bitmap, float[]> preProcessNode = input -> this.preProcessor.preprocessBitmap(input, inputSize);
         ProcessingNode<float[], float[]> inferenceNode = this.interpreter::runInference;
         ProcessingNode<float[], List<Detection>> postProcessNode = data -> this.yoloDecoder.decode(data, inputSize);
-        return new ProcessingChain<>(Arrays.asList(
+
+        List<ProcessingStage<?, ?>> stages = new java.util.ArrayList<>(Arrays.asList(
                 new ProcessingStage<>(preProcessNode, preProcessExecutor),
                 new ProcessingStage<>(inferenceNode, inferenceExecutor),
                 new ProcessingStage<>(postProcessNode, postProcessExecutor)));
 
+        if (tracker != null) {
+            ProcessingNode<List<Detection>, List<Detection>> trackingNode = tracker::update;
+            stages.add(new ProcessingStage<>(trackingNode, postProcessExecutor));
+        }
+
+        return new ProcessingChain<>(stages);
     }
 
     /**

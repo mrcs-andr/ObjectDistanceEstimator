@@ -16,6 +16,7 @@ import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.IDetectionUpdated
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ILetterBoxObserver;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ImageProcessor;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.TFLitePreProcessor;
+import com.mrcs.andr.objectdistanceestimatorapp.tracking.IByteTracker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,13 +33,14 @@ public class AppContainer {
                         LifecycleOwner lifecycleOwner,
                         IDetectionUpdated detectionUpdated, PreviewView previewView,
                         ModelObserver modelObserver,
+                        IByteTracker tracker,
                         ProcessingChain<Bitmap, List<Detection>> processingChain,
                         ExecutorService preProcessExecutor,
                         ExecutorService inferenceExecutor,
                         ExecutorService postProcessExecutor,
                         ExecutorService detectionExecutor) throws Exception {
         this.createModelManager(letterBoxObserver, context, detectionUpdated, modelObserver,
-                processingChain, preProcessExecutor, inferenceExecutor, postProcessExecutor, detectionExecutor);
+                tracker, processingChain, preProcessExecutor, inferenceExecutor, postProcessExecutor, detectionExecutor);
         this.createCameraController(context, lifecycleOwner, previewView);
     }
 
@@ -82,6 +84,7 @@ public class AppContainer {
      */
     private void createModelManager(ILetterBoxObserver letterBoxObserver, Context context,
                                     IDetectionUpdated detectionUpdated, ModelObserver modelObserver,
+                                    IByteTracker tracker,
                                     ProcessingChain<Bitmap, List<Detection>> processingChain,
                                     ExecutorService preProcessExecutor,
                                     ExecutorService inferenceExecutor,
@@ -109,7 +112,7 @@ public class AppContainer {
             resolvedDetection = resolvedPostProcess;
         }
         this.modelManager = new ModelManager(modelInterpreter, preProcessor, detectionUpdated,
-                processingChain, 512, resolvedPreProcess, resolvedInference, resolvedPostProcess, resolvedDetection);
+                tracker, processingChain, 512, resolvedPreProcess, resolvedInference, resolvedPostProcess, resolvedDetection);
         this.modelManager.loadModel("yolo11_kitti_float16.tflite");
     }
 
@@ -147,6 +150,7 @@ public class AppContainer {
         private PreviewView previewView;
         private ModelObserver modelObserver;
         private LifecycleOwner lifecycleOwner;
+        private IByteTracker tracker;
         private ProcessingChain<Bitmap, List<Detection>> processingChain;
         private ExecutorService preProcessExecutor;
         private ExecutorService inferenceExecutor;
@@ -183,6 +187,11 @@ public class AppContainer {
             return this;
         }
 
+        public Builder setByteTracker(IByteTracker tracker) {
+            this.tracker = tracker;
+            return this;
+        }
+
         public Builder setProcessingChain(
                 ProcessingChain<Bitmap, List<Detection>> processingChain) {
             this.processingChain = processingChain;
@@ -214,7 +223,7 @@ public class AppContainer {
             if(lifecycleOwner == null)
                 throw new IllegalArgumentException("LifecycleOwner is required");
             return new AppContainer(letterBoxObserver, context, lifecycleOwner, detectionUpdated,
-                    previewView, modelObserver, processingChain,
+                    previewView, modelObserver, tracker, processingChain,
                     preProcessExecutor, inferenceExecutor, postProcessExecutor, detectionExecutor);
         }
     }
