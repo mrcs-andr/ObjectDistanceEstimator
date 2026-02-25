@@ -12,7 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 /**
  * Room database for storing camera calibration results.
  */
-@Database(entities = {CalibrationResult.class}, version = 2, exportSchema = false)
+@Database(entities = {CalibrationResult.class, ExtrinsicsCalibrationResult.class},
+        version = 3, exportSchema = false)
 public abstract class CalibrationDatabase extends RoomDatabase {
 
     private static final String DB_NAME = "calibration_db";
@@ -25,6 +26,18 @@ public abstract class CalibrationDatabase extends RoomDatabase {
                     "ALTER TABLE calibration_results ADD COLUMN cameraHeight REAL NOT NULL DEFAULT 1.5");
             database.execSQL(
                     "ALTER TABLE calibration_results ADD COLUMN cameraPitch REAL NOT NULL DEFAULT 0.0");
+        }
+    };
+
+    static final Migration MIGRATION_2_3 = new Migration(2, 3) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `extrinsics_results` " +
+                    "(`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`cameraHeight` REAL NOT NULL, " +
+                    "`cameraPitch` REAL NOT NULL, " +
+                    "`timestamp` INTEGER NOT NULL)");
         }
     };
 
@@ -41,7 +54,7 @@ public abstract class CalibrationDatabase extends RoomDatabase {
                             context.getApplicationContext(),
                             CalibrationDatabase.class,
                             DB_NAME
-                    ).addMigrations(MIGRATION_1_2).build();
+                    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build();
                 }
             }
         }
@@ -53,4 +66,10 @@ public abstract class CalibrationDatabase extends RoomDatabase {
      * @return CalibrationDao
      */
     public abstract CalibrationDao calibrationDao();
+
+    /**
+     * Returns the DAO for extrinsics calibration results.
+     * @return ExtrinsicsCalibrationDao
+     */
+    public abstract ExtrinsicsCalibrationDao extrinsicsCalibrationDao();
 }

@@ -1,6 +1,7 @@
 package com.mrcs.andr.objectdistanceestimatorapp.distance;
 
 import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationResult;
+import com.mrcs.andr.objectdistanceestimatorapp.calibration.ExtrinsicsCalibrationResult;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.Detection;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ILetterBoxObserver;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.LetterBoxParams;
@@ -35,6 +36,7 @@ public class DistanceEstimator implements ILetterBoxObserver {
 
     private volatile CalibrationResult calibration;
     private volatile LetterBoxParams letterBoxParams;
+    private volatile ExtrinsicsCalibrationResult extrinsics;
 
     /**
      * Updates the camera calibration used for distance estimation.
@@ -44,6 +46,18 @@ public class DistanceEstimator implements ILetterBoxObserver {
      */
     public void setCalibration(CalibrationResult calibration) {
         this.calibration = calibration;
+    }
+
+    /**
+     * Updates the camera extrinsics (pose) used for distance estimation.
+     * When set, the height and pitch from the extrinsics take precedence over
+     * the values stored inside the intrinsics {@link CalibrationResult}.
+     * Safe to call from any thread.
+     *
+     * @param extrinsics latest extrinsics calibration result from the database
+     */
+    public void setExtrinsics(ExtrinsicsCalibrationResult extrinsics) {
+        this.extrinsics = extrinsics;
     }
 
     /**
@@ -76,9 +90,17 @@ public class DistanceEstimator implements ILetterBoxObserver {
             return Float.NaN;
         }
 
-        if (cal.cameraHeight <= 0 || cal.fx <= 0 || cal.fy <= 0) {
+        if (cal.fx <= 0 || cal.fy <= 0) {
             return Float.NaN;
         }
+
+        // Use extrinsics height/pitch if available, otherwise fall back to calibration values
+        double h = (extrinsics != null) ? extrinsics.cameraHeight : cal.cameraHeight;
+        if (h <= 0) {
+            return Float.NaN;
+        }
+        double pitch = Math.toRadians(
+                (extrinsics != null) ? extrinsics.cameraPitch : cal.cameraPitch);
 
         // Bottom-centre of the bounding box in model space
         float u_m = d.x + d.width / 2f;
@@ -113,8 +135,6 @@ public class DistanceEstimator implements ILetterBoxObserver {
         distortedPt.release();
         undistortedPt.release();
 
-        double h = cal.cameraHeight;
-        double pitch = Math.toRadians(cal.cameraPitch);
         double cosp = Math.cos(pitch);
         double sinp = Math.sin(pitch);
 

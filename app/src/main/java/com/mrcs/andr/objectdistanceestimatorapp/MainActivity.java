@@ -107,6 +107,10 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
             startActivity(new Intent(this, IntrinsicsCalibrationActivity.class));
             return true;
         }
+        if(item.getItemId() == R.id.action_extrinsics_calibration){
+            startActivity(new Intent(this, ExtrinsicsCalibrationActivity.class));
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 

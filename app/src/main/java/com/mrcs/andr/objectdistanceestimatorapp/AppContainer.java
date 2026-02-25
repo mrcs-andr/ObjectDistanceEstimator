@@ -8,6 +8,7 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationDatabase;
 import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationResult;
+import com.mrcs.andr.objectdistanceestimatorapp.calibration.ExtrinsicsCalibrationResult;
 import com.mrcs.andr.objectdistanceestimatorapp.camera.CameraController;
 import com.mrcs.andr.objectdistanceestimatorapp.distance.DistanceEstimator;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelInterpreter;
@@ -127,10 +128,15 @@ public class AppContainer {
         // Load calibration from database on a background thread and pass to the estimator
         ExecutorService calibrationExecutor = resolveExecutor(null);
         calibrationExecutor.execute(() -> {
-            CalibrationResult cal = CalibrationDatabase.getInstance(context)
-                    .calibrationDao().getLatest();
+            CalibrationDatabase db = CalibrationDatabase.getInstance(context);
+            CalibrationResult cal = db.calibrationDao().getLatest();
             if (cal != null) {
                 distanceEstimator.setCalibration(cal);
+            }
+            ExtrinsicsCalibrationResult ext =
+                    db.extrinsicsCalibrationDao().getLatest();
+            if (ext != null) {
+                distanceEstimator.setExtrinsics(ext);
             }
         });
     }

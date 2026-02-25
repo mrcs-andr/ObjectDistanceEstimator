@@ -13,4 +13,15 @@
     <string name="camera_height_hint">e.g. 1.5</string>
     <string name="camera_pitch_label">Camera pitch (°):</string>
     <string name="camera_pitch_hint">e.g. 0.0</string>
+    <!-- Extrinsics calibration -->
+    <string name="extrinsics_calibration">Pose Calibration (ArUco)</string>
+    <string name="title_activity_extrinsics_calibration">Pose Calibration</string>
+    <string name="extrinsics_marker_size_label">Marker size (m):</string>
+    <string name="extrinsics_marker_size_hint">e.g. 0.15</string>
+    <string name="extrinsics_save_button">Save Pose</string>
+    <string name="extrinsics_status_searching">Searching for ArUco marker…</string>
+    <string name="extrinsics_status_detected">Marker %d detected\nHeight: %.3f m  Pitch: %.1f°</string>
+    <string name="extrinsics_no_intrinsics">No intrinsics calibration found. Please calibrate intrinsics first.</string>
+    <string name="extrinsics_no_pose">No pose detected yet.</string>
+    <string name="extrinsics_saved">Camera pose saved.</string>
 </resources>

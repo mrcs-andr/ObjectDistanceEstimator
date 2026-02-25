@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <FrameLayout
+        android:id="@+id/extrinsicsFramePreview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/extrinsicsBottomPanel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/extrinsicsPreviewView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:implementationMode="performance" />
+
+        <!-- Overlay status text shown on top of the preview -->
+        <TextView
+            android:id="@+id/tvPoseStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="8dp"
+            android:background="#AA000000"
+            android:padding="6dp"
+            android:text="@string/extrinsics_status_searching"
+            android:textColor="@android:color/white"
+            android:textSize="13sp" />
+
+    </FrameLayout>
+
+    <!-- Bottom panel: marker size input + save button -->
+    <LinearLayout
+        android:id="@+id/extrinsicsBottomPanel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:background="#CC000000"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/extrinsics_marker_size_label"
+                android:textColor="@android:color/white" />
+
+            <EditText
+                android:id="@+id/etMarkerSize"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/extrinsics_marker_size_hint"
+                android:inputType="numberDecimal"
+                android:text="0.15"
+                android:textColor="@android:color/white"
+                android:textColorHint="#AAAAAA" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSavePose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="8dp"
+            android:enabled="false"
+            android:text="@string/extrinsics_save_button" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -12,6 +12,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ObjectDistanceEstimatorApp">
         <activity
+            android:name=".ExtrinsicsCalibrationActivity"
+            android:exported="false"
+            android:label="@string/title_activity_extrinsics_calibration"
+            android:theme="@style/Theme.ObjectDistanceEstimatorApp" />
+        <activity
             android:name=".IntrinsicsCalibrationActivity"
             android:exported="false"
             android:label="@string/title_activity_intrinsics_calibration"
