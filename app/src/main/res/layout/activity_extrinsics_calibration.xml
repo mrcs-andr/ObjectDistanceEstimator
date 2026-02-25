@@ -35,13 +35,11 @@
 
     </FrameLayout>
 
-    <!-- Bottom panel: marker size input + save button -->
-    <LinearLayout
+    <!-- Bottom panel: marker parameters + save button -->
+    <ScrollView
         android:id="@+id/extrinsicsBottomPanel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="12dp"
         android:background="#CC000000"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -50,37 +48,164 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:padding="12dp">
 
+            <!-- Marker physical size -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/extrinsics_marker_size_label"
+                    android:textColor="@android:color/white" />
+
+                <EditText
+                    android:id="@+id/etMarkerSize"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/extrinsics_marker_size_hint"
+                    android:inputType="numberDecimal"
+                    android:text="0.15"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#AAAAAA" />
+
+            </LinearLayout>
+
+            <!-- Section header -->
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/extrinsics_marker_size_label"
-                android:textColor="@android:color/white" />
+                android:layout_marginTop="8dp"
+                android:text="@string/extrinsics_marker_world_section"
+                android:textColor="#CCCCCC"
+                android:textStyle="italic"
+                android:textSize="12sp" />
 
-            <EditText
-                android:id="@+id/etMarkerSize"
-                android:layout_width="0dp"
+            <!-- Marker world X -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/extrinsics_marker_size_hint"
-                android:inputType="numberDecimal"
-                android:text="0.15"
-                android:textColor="@android:color/white"
-                android:textColorHint="#AAAAAA" />
+                android:orientation="horizontal"
+                android:paddingTop="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/extrinsics_marker_world_x_label"
+                    android:textColor="@android:color/white" />
+
+                <EditText
+                    android:id="@+id/etMarkerWorldX"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/extrinsics_marker_coord_hint"
+                    android:inputType="numberDecimal|numberSigned"
+                    android:text="0.0"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#AAAAAA" />
+
+            </LinearLayout>
+
+            <!-- Marker world Y -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/extrinsics_marker_world_y_label"
+                    android:textColor="@android:color/white" />
+
+                <EditText
+                    android:id="@+id/etMarkerWorldY"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/extrinsics_marker_coord_hint"
+                    android:inputType="numberDecimal|numberSigned"
+                    android:text="0.0"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#AAAAAA" />
+
+            </LinearLayout>
+
+            <!-- Marker world Z -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/extrinsics_marker_world_z_label"
+                    android:textColor="@android:color/white" />
+
+                <EditText
+                    android:id="@+id/etMarkerWorldZ"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/extrinsics_marker_coord_hint"
+                    android:inputType="numberDecimal|numberSigned"
+                    android:text="0.0"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#AAAAAA" />
+
+            </LinearLayout>
+
+            <!-- Marker world Yaw -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/extrinsics_marker_world_yaw_label"
+                    android:textColor="@android:color/white" />
+
+                <EditText
+                    android:id="@+id/etMarkerWorldYaw"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/extrinsics_marker_angle_hint"
+                    android:inputType="numberDecimal|numberSigned"
+                    android:text="0.0"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#AAAAAA" />
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnSavePose"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:enabled="false"
+                android:text="@string/extrinsics_save_button" />
 
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btnSavePose"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginTop="8dp"
-            android:enabled="false"
-            android:text="@string/extrinsics_save_button" />
-
-    </LinearLayout>
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

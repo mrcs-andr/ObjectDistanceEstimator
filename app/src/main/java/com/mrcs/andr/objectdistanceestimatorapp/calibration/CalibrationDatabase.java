@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
  * Room database for storing camera calibration results.
  */
 @Database(entities = {CalibrationResult.class, ExtrinsicsCalibrationResult.class},
-        version = 3, exportSchema = false)
+        version = 4, exportSchema = false)
 public abstract class CalibrationDatabase extends RoomDatabase {
 
     private static final String DB_NAME = "calibration_db";
@@ -41,6 +41,24 @@ public abstract class CalibrationDatabase extends RoomDatabase {
         }
     };
 
+    static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // Recreate table with full 6-DOF schema
+            database.execSQL("DROP TABLE IF EXISTS `extrinsics_results`");
+            database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `extrinsics_results` " +
+                    "(`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`cameraX` REAL NOT NULL, " +
+                    "`cameraY` REAL NOT NULL, " +
+                    "`cameraZ` REAL NOT NULL, " +
+                    "`cameraYaw` REAL NOT NULL, " +
+                    "`cameraPitch` REAL NOT NULL, " +
+                    "`cameraRoll` REAL NOT NULL, " +
+                    "`timestamp` INTEGER NOT NULL)");
+        }
+    };
+
     /**
      * Get the singleton database instance.
      * @param context application context
@@ -54,7 +72,7 @@ public abstract class CalibrationDatabase extends RoomDatabase {
                             context.getApplicationContext(),
                             CalibrationDatabase.class,
                             DB_NAME
-                    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build();
+                    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build();
                 }
             }
         }
