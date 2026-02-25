@@ -8,6 +8,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -22,17 +23,29 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class CameraController {
 
+    /**
+     * Defines the mode of the camera controller. ANALYSIS mode is used for real-time frame analysis,
+     * while CAPTURE mode is used for capturing a single frame for calibration
+     */
+    public enum Mode {
+        ANALYSIS,
+        CAPTURE
+    }
+
     private final Context context;
     private final LifecycleOwner lifecycleOwner;
     private final PreviewView previewView;
     private final ExecutorService cameraExecutor = Executors.newSingleThreadExecutor();
     private final IFrameAvailableListener frameAvailableListener;
+    private Mode mode = Mode.ANALYSIS;
+    private ImageCapture imageCapture;
 
     public CameraController(Context context, LifecycleOwner lifecycleOwner,
                             IFrameAvailableListener frameAvailableListener,
@@ -41,6 +54,14 @@ public class CameraController {
         this.lifecycleOwner = lifecycleOwner;
         this.previewView = previewView;
         this.frameAvailableListener = frameAvailableListener;
+    }
+
+    /**
+     * Sets the mode of the camera controller.
+     * @param mode The mode to set: ANALYSIS or CAPTURE.
+     */
+    public void setMode(@NonNull Mode mode) {
+        this.mode = mode;
     }
 
     public void start() {
@@ -59,25 +80,62 @@ public class CameraController {
                 preview.setSurfaceProvider(
                         previewView.getSurfaceProvider()
                 );
-                ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build();
-                imageAnalysis.setAnalyzer(cameraExecutor, new ImageAnalyser(this.frameAvailableListener));
                 CameraSelector cameraSelector =
                         CameraSelector.DEFAULT_BACK_CAMERA;
                 cameraProvider.unbindAll();
-                cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview,
-                        imageAnalysis
-                );
+
+                switch (mode){
+                    case ANALYSIS:
+                        Log.d("CameraController", "Starting in ANALYSIS mode");
+                        ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
+                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                .build();
+                        imageAnalysis.setAnalyzer(cameraExecutor, new ImageAnalyser(this.frameAvailableListener));
+                        cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                cameraSelector,
+                                preview,
+                                imageAnalysis
+                        );
+                        break;
+                    case CAPTURE:
+                        Log.d("CameraController", "Starting in CAPTURE mode");
+                        this.imageCapture = new ImageCapture.Builder()
+                                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                                .build();
+                        cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                cameraSelector,
+                                preview,
+                                imageCapture
+                        );
+                        break;
+                }
             } catch (Exception e) {
                 Log.e("CameraController", e.getMessage(), e);
             }
         }, ContextCompat.getMainExecutor(context));
     }
 
+    /**
+     * Captures a single image and saves it to the specified file. This method should only be called when the controller is in CAPTURE mode.
+     * @param file The file where the captured image will be saved.
+     * @param callback The callback to be invoked when the image is saved or if an error occurs.
+     */
+    public void takePicture(
+            @NonNull File file,
+            @NonNull ImageCapture.OnImageSavedCallback callback) {
+        if (mode != Mode.CAPTURE || imageCapture == null) {
+            Log.e("CameraController", "Camera is not in CAPTURE mode or imageCapture is null!");
+            return;
+        }
+        ImageCapture.OutputFileOptions outputFileOptions = new ImageCapture.OutputFileOptions.Builder(file).build();
+        imageCapture.takePicture(outputFileOptions, ContextCompat.getMainExecutor(context), callback);
+    }
+
+    /**
+     * Stops the camera and releases resources.
+     */
     public void stop() {
         cameraExecutor.shutdown();
     }

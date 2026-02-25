@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">ObjectDistanceEstimatorApp</string>
+    <string name="calibration">Calibration</string>
+    <string name="title_activity_intrinsics_calibration">Intrinsics Calibration</string>
+    <string name="calibration_start">Calibrate</string>
+    <string name="calibration_in_progress_title">Calibrating…</string>
+    <string name="calibration_in_progress_message">Running camera intrinsics calibration. Please wait.</string>
+    <string name="calibration_result_title">Calibration Complete</string>
+    <string name="calibration_result_message">fx=%.2f  fy=%.2f\ncx=%.2f  cy=%.2f\nRMS error: %.4f</string>
+    <string name="calibration_no_patterns">No valid checkerboard patterns found in saved images.</string>
+    <string name="calibration_failed_message">Calibration failed: %s</string>
 </resources>

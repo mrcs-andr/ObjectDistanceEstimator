@@ -1,14 +1,18 @@
 package com.mrcs.andr.objectdistanceestimatorapp;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
@@ -82,6 +86,31 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     }
 
     /**
+     * Inflate the menu, adds items to the action bar if it is present.
+     * @param menu the options menu in which you place your items.
+     * @return true for the menu to be displayed; false to suppress it.
+     */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    /**
+     * Handle menu item selections
+     * @param item the menu item that was selected.
+     * @return false to allow normal menu processing to proceed, true to consume it here.
+     */
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if(item.getItemId() == R.id.action_intrinsics_calibration){
+            startActivity(new Intent(this, IntrinsicsCalibrationActivity.class));
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    /**
      * On Start Activity lifecycle event
      */
     @Override
@@ -115,8 +144,8 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
                 return;
             }
             previewView.post(()->this.detectionOverlayView.setFromPreviewView(previewView));
-            this.appContainer.getCameraController().start();
         }
+        this.appContainer.getCameraController().start();
     }
 
     /**

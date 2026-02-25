@@ -62,4 +62,9 @@ dependencies {
     implementation "org.tensorflow:tensorflow-lite-support:0.4.4"
 
     implementation project(':OpencvSDK')
+
+    // Room database
+    def room_version = "2.6.1"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
 }
