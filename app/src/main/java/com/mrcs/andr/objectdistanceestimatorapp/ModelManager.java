@@ -13,7 +13,7 @@ import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.Detection;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.IDetectionUpdated;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.YoloDecoder;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ImageProcessor;
-import com.mrcs.andr.objectdistanceestimatorapp.tracking.IByteTracker;
+import com.mrcs.andr.objectdistanceestimatorapp.tracking.IObjectTracker;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,7 +30,7 @@ public class ModelManager implements IFrameAvailableListener {
     private final ImageProcessor preProcessor;
     private final IDetectionUpdated detectionUpdated;
     private final YoloDecoder yoloDecoder;
-    private final IByteTracker tracker;
+    private final IObjectTracker tracker;
     private final ProcessingChain<Bitmap, List<Detection>> processingChain;
     private final int inputSize;
     private final Executor detectionExecutor;
@@ -57,7 +57,7 @@ public class ModelManager implements IFrameAvailableListener {
     }
 
     public ModelManager(ModelInterpreter interpreter, ImageProcessor preProcessor, IDetectionUpdated detectionUpdated,
-                        IByteTracker tracker,
+                        IObjectTracker tracker,
                         ProcessingChain<Bitmap, List<Detection>> processingChain, int inputSize,
                         Executor preProcessExecutor, Executor inferenceExecutor,
                         Executor postProcessExecutor, Executor detectionExecutor) {

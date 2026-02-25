@@ -16,7 +16,7 @@ import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.IDetectionUpdated
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ILetterBoxObserver;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.ImageProcessor;
 import com.mrcs.andr.objectdistanceestimatorapp.preprocessing.TFLitePreProcessor;
-import com.mrcs.andr.objectdistanceestimatorapp.tracking.IByteTracker;
+import com.mrcs.andr.objectdistanceestimatorapp.tracking.IObjectTracker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +33,7 @@ public class AppContainer {
                         LifecycleOwner lifecycleOwner,
                         IDetectionUpdated detectionUpdated, PreviewView previewView,
                         ModelObserver modelObserver,
-                        IByteTracker tracker,
+                        IObjectTracker tracker,
                         ProcessingChain<Bitmap, List<Detection>> processingChain,
                         ExecutorService preProcessExecutor,
                         ExecutorService inferenceExecutor,
@@ -84,7 +84,7 @@ public class AppContainer {
      */
     private void createModelManager(ILetterBoxObserver letterBoxObserver, Context context,
                                     IDetectionUpdated detectionUpdated, ModelObserver modelObserver,
-                                    IByteTracker tracker,
+                                    IObjectTracker tracker,
                                     ProcessingChain<Bitmap, List<Detection>> processingChain,
                                     ExecutorService preProcessExecutor,
                                     ExecutorService inferenceExecutor,
@@ -150,7 +150,7 @@ public class AppContainer {
         private PreviewView previewView;
         private ModelObserver modelObserver;
         private LifecycleOwner lifecycleOwner;
-        private IByteTracker tracker;
+        private IObjectTracker tracker;
         private ProcessingChain<Bitmap, List<Detection>> processingChain;
         private ExecutorService preProcessExecutor;
         private ExecutorService inferenceExecutor;
@@ -187,7 +187,7 @@ public class AppContainer {
             return this;
         }
 
-        public Builder setByteTracker(IByteTracker tracker) {
+        public Builder setByteTracker(IObjectTracker tracker) {
             this.tracker = tracker;
             return this;
         }
