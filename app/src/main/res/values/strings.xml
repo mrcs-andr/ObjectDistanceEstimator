@@ -1,13 +1,12 @@
 <resources>
     <string name="app_name">ObjectDistanceEstimatorApp</string>
-    <string name="calibration_activity_title">Intrinsics Calibration</string>
-    <string name="calibration_take_picture">Take Picture</string>
+    <string name="calibration">Calibration</string>
+    <string name="title_activity_intrinsics_calibration">Intrinsics Calibration</string>
     <string name="calibration_start">Calibrate</string>
-    <string name="calibration_picture_count">Pictures: %1$d / %2$d</string>
-    <string name="calibration_pattern_found">Pattern found! %1$d / %2$d</string>
-    <string name="calibration_pattern_not_found">Checkerboard not found. Try again.</string>
-    <string name="calibration_capture_failed">Image capture failed. Try again.</string>
-    <string name="calibration_success">Calibration complete! RMS error: %.4f</string>
-    <string name="calibration_failed">Calibration failed. Check your images.</string>
-    <string name="calibration_camera_permission_denied">Camera permission is required for calibration.</string>
+    <string name="calibration_in_progress_title">Calibrating…</string>
+    <string name="calibration_in_progress_message">Running camera intrinsics calibration. Please wait.</string>
+    <string name="calibration_result_title">Calibration Complete</string>
+    <string name="calibration_result_message">fx=%.2f  fy=%.2f\ncx=%.2f  cy=%.2f\nRMS error: %.4f</string>
+    <string name="calibration_no_patterns">No valid checkerboard patterns found in saved images.</string>
+    <string name="calibration_failed_message">Calibration failed: %s</string>
 </resources>
