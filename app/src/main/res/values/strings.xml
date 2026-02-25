@@ -9,4 +9,8 @@
     <string name="calibration_result_message">fx=%.2f  fy=%.2f\ncx=%.2f  cy=%.2f\nRMS error: %.4f</string>
     <string name="calibration_no_patterns">No valid checkerboard patterns found in saved images.</string>
     <string name="calibration_failed_message">Calibration failed: %s</string>
+    <string name="camera_height_label">Camera height (m):</string>
+    <string name="camera_height_hint">e.g. 1.5</string>
+    <string name="camera_pitch_label">Camera pitch (°):</string>
+    <string name="camera_pitch_hint">e.g. 0.0</string>
 </resources>

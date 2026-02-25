@@ -2,18 +2,31 @@ package com.mrcs.andr.objectdistanceestimatorapp.calibration;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 
 /**
  * Room database for storing camera calibration results.
  */
-@Database(entities = {CalibrationResult.class}, version = 1, exportSchema = false)
+@Database(entities = {CalibrationResult.class}, version = 2, exportSchema = false)
 public abstract class CalibrationDatabase extends RoomDatabase {
 
     private static final String DB_NAME = "calibration_db";
     private static volatile CalibrationDatabase instance;
+
+    static final Migration MIGRATION_1_2 = new Migration(1, 2) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                    "ALTER TABLE calibration_results ADD COLUMN cameraHeight REAL NOT NULL DEFAULT 1.5");
+            database.execSQL(
+                    "ALTER TABLE calibration_results ADD COLUMN cameraPitch REAL NOT NULL DEFAULT 0.0");
+        }
+    };
 
     /**
      * Get the singleton database instance.
@@ -28,7 +41,7 @@ public abstract class CalibrationDatabase extends RoomDatabase {
                             context.getApplicationContext(),
                             CalibrationDatabase.class,
                             DB_NAME
-                    ).build();
+                    ).addMigrations(MIGRATION_1_2).build();
                 }
             }
         }

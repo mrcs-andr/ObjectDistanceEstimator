@@ -5,6 +5,9 @@ public class Detection {
     public final float score;
     public final int classId;
 
+    /** Distance from camera to the object on the ground plane, in metres. NaN if unavailable. */
+    public float distanceMeters = Float.NaN;
+
     /**
      * Constructor of Detection.
      * @param x x coordinate on the model input space

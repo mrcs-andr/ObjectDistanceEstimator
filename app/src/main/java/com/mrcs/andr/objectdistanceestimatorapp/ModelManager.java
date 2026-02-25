@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.mrcs.andr.objectdistanceestimatorapp.camera.IFrameAvailableListener;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelInterpreter;
+import com.mrcs.andr.objectdistanceestimatorapp.distance.DistanceEstimator;
 import com.mrcs.andr.objectdistanceestimatorapp.pipeline.ProcessingChain;
 import com.mrcs.andr.objectdistanceestimatorapp.pipeline.ProcessingNode;
 import com.mrcs.andr.objectdistanceestimatorapp.pipeline.ProcessingStage;
@@ -36,6 +37,7 @@ public class ModelManager implements IFrameAvailableListener {
     private final Executor detectionExecutor;
     private final AtomicBoolean isProcessing = new AtomicBoolean(false);
     private final AtomicReference<Bitmap> pendingFrame = new AtomicReference<>();
+    private final AtomicReference<DistanceEstimator> distanceEstimator = new AtomicReference<>();
     private final Object frameLock = new Object();
 
     /**
@@ -80,6 +82,15 @@ public class ModelManager implements IFrameAvailableListener {
      */
     public void loadModel(String modelPath) throws Exception {
         interpreter.loadModel(modelPath);
+    }
+
+    /**
+     * Sets the distance estimator used to annotate detections with ground-plane distances.
+     * May be called from any thread at any time; takes effect on the next processed frame.
+     * @param estimator DistanceEstimator instance, or null to disable distance estimation
+     */
+    public void setDistanceEstimator(DistanceEstimator estimator) {
+        this.distanceEstimator.set(estimator);
     }
 
     /**
@@ -141,9 +152,18 @@ public class ModelManager implements IFrameAvailableListener {
     }
 
     private void startProcessing(Bitmap bmp) {
+        Executor callbackExecutor = detectionExecutor == null ? command -> command.run() : detectionExecutor;
         this.processingChain.processAsync(bmp)
-                .thenAcceptAsync(this.detectionUpdated::onDetectionUpdated,
-                        detectionExecutor == null ? command -> command.run() : detectionExecutor)
+                .thenApplyAsync(detections -> {
+                    DistanceEstimator est = distanceEstimator.get();
+                    if (est != null) {
+                        for (Detection d : detections) {
+                            d.distanceMeters = est.estimate(d);
+                        }
+                    }
+                    return detections;
+                }, callbackExecutor)
+                .thenAcceptAsync(this.detectionUpdated::onDetectionUpdated, callbackExecutor)
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
                         Log.e("ModelManager", "Error processing frame", ex);

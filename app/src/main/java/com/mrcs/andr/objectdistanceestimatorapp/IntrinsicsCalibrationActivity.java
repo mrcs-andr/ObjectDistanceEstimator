@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,6 +40,8 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
     private TextView tvLabel;
     private ProgressBar pbCalibration;
     private Button btnCalibrate;
+    private EditText etCameraHeight;
+    private EditText etCameraPitch;
     private CameraController cameraController;
     private final ExecutorService calibrationExecutor = Executors.newSingleThreadExecutor();
 
@@ -56,6 +59,8 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
         this.btnCalibrate = findViewById(R.id.buttonCalibrate);
         this.tvLabel = findViewById(R.id.tvCount);
         this.pbCalibration = findViewById(R.id.progressCalibration);
+        this.etCameraHeight = findViewById(R.id.etCameraHeight);
+        this.etCameraPitch = findViewById(R.id.etCameraPitch);
         this.cameraController = new CameraController(this, this, null, previewView);
         this.cameraController.setMode(CameraController.Mode.CAPTURE);
         this.cameraController.start();
@@ -162,6 +167,16 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
     private void onCalibrateClicked() {
         btnCalibrate.setEnabled(false);
 
+        // Read UI values on the main thread before launching background work
+        double cameraHeight = 1.5;
+        try { cameraHeight = Double.parseDouble(etCameraHeight.getText().toString()); }
+        catch (NumberFormatException ignored) {}
+        double cameraPitch = 0.0;
+        try { cameraPitch = Double.parseDouble(etCameraPitch.getText().toString()); }
+        catch (NumberFormatException ignored) {}
+        final double finalCameraHeight = cameraHeight;
+        final double finalCameraPitch = cameraPitch;
+
         AlertDialog progressDialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.calibration_in_progress_title)
                 .setMessage(R.string.calibration_in_progress_message)
@@ -179,7 +194,8 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
                 CalibrationRunner.Result calibResult = CalibrationRunner.Result.calibrate(
                         dataset.imagePoints, dataset.objectsPoints, dataset.imageSize);
 
-                CalibrationResult dbResult = toCalibrationResult(calibResult);
+                CalibrationResult dbResult = toCalibrationResult(
+                        calibResult, finalCameraHeight, finalCameraPitch);
                 calibResult.cameraMatrix.release();
                 calibResult.distCoeffs.release();
 
@@ -215,7 +231,8 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
      * Converts a {@link CalibrationRunner.Result} (raw OpenCV Mats) into a {@link CalibrationResult}
      * entity suitable for database persistence.
      */
-    private CalibrationResult toCalibrationResult(CalibrationRunner.Result r) {
+    private CalibrationResult toCalibrationResult(CalibrationRunner.Result r,
+                                                   double cameraHeight, double cameraPitch) {
         double fx = r.cameraMatrix.get(0, 0)[0];
         double fy = r.cameraMatrix.get(1, 1)[0];
         double cx = r.cameraMatrix.get(0, 2)[0];
@@ -228,7 +245,10 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
         double p2 = dist.length > 3 ? dist[3] : 0;
         double k3 = dist.length > 4 ? dist[4] : 0;
 
-        return new CalibrationResult(fx, fy, cx, cy, k1, k2, p1, p2, k3,
+        CalibrationResult result = new CalibrationResult(fx, fy, cx, cy, k1, k2, p1, p2, k3,
                 r.reprojectionError, System.currentTimeMillis());
+        result.cameraHeight = cameraHeight;
+        result.cameraPitch = cameraPitch;
+        return result;
     }
 }

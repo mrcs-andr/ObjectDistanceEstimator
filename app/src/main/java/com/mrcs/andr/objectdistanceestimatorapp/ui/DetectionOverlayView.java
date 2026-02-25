@@ -181,6 +181,9 @@ public class DetectionOverlayView extends View {
     private static String safeLabel(Detection d) {
         String name = (d.classId >= 0 && d.classId < KittiLabels.NAMES.length)
                 ? KittiLabels.NAMES[d.classId] : "Unknown";
-        return String.format("%s : %.2f", name, d.score);
+        if (!Float.isNaN(d.distanceMeters)) {
+            return String.format("%s %.1fm", name, d.distanceMeters);
+        }
+        return name;
     }
 }
