@@ -1,6 +1,7 @@
 package com.mrcs.andr.objectdistanceestimatorapp;
 
 import android.os.Bundle;
+import android.os.FileUtils;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -21,9 +22,6 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
     private static final String TAG = "IntrinsicsCalibration";
     private static final int REQUIRED_IMAGE_COUNT = 20;
     private int savedImageCount = 0;
-    private PreviewView previewView;
-    private Button bntCapture;
-    private Button bntClear;
     private TextView tvLabel;
     private ProgressBar pbCalibration;
     private CameraController cameraController;
@@ -36,15 +34,16 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_intrinsics_calibration);
-        this.previewView = findViewById(R.id.intrinsicsPreviewView);
-        this.bntCapture = findViewById(R.id.buttonTakePicture);
-        this.bntClear = findViewById(R.id.buttonClearPictures);
+        PreviewView previewView = findViewById(R.id.intrinsicsPreviewView);
+        Button bntCapture = findViewById(R.id.buttonTakePicture);
+        Button bntClear = findViewById(R.id.buttonClearPictures);
         this.tvLabel = findViewById(R.id.tvCount);
         this.pbCalibration = findViewById(R.id.progressCalibration);
         this.cameraController = new CameraController(this, this, null, previewView);
         this.cameraController.setMode(CameraController.Mode.CAPTURE);
         this.cameraController.start();
-        this.bntCapture.setOnClickListener(v -> onTakeClicked());
+        bntCapture.setOnClickListener(v -> onTakeClicked());
+        bntClear.setOnClickListener(v -> clearCalibrationImages());
     }
 
     /**
@@ -60,12 +59,60 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
         return calibrationDir;
     }
 
+    /**
+     * Deletes the calibration images folder and all its contents.
+     */
+    private void deleteCalibrationFolder(){
+        File dir = this.getCalibrationImagesDir();
+        if(dir.exists())
+        {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (!file.delete()) {
+                        Log.e(TAG, "Could not delete file: " + file.getAbsolutePath());
+                    }
+                }
+            }
+            if (!dir.delete()) {
+                Log.e(TAG, "Could not delete calibration directory: " + dir.getAbsolutePath());
+            }
+        }
+    }
+
+    /**
+     * Clears all saved calibration images from the storage and resets the saved image count and UI elements.
+     */
+    private void clearCalibrationImages(){
+        File dir = this.getCalibrationImagesDir();
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (!file.delete()) {
+                    Log.e(TAG, "Could not delete file: " + file.getAbsolutePath());
+                }
+            }
+        }
+        this.savedImageCount = 0;
+        this.runOnUiThread(() -> {
+            tvLabel.setText(savedImageCount + " / " + REQUIRED_IMAGE_COUNT);
+            pbCalibration.setProgress(0);
+        });
+    }
+
+    /**
+     * On Destroy Activity lifecycle event
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
         this.cameraController.stop();
+        this.deleteCalibrationFolder();
     }
 
+    /**
+     * Handles the take picture button click event. Captures an image and saves it to the calibration images directory.
+     */
     private void onTakeClicked(){
         File dir = this.getCalibrationImagesDir();
         File file = new File(dir, "img_" + System.currentTimeMillis() + ".jpg");
