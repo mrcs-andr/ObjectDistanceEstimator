@@ -6,7 +6,10 @@ import android.graphics.Bitmap;
 import androidx.camera.view.PreviewView;
 import androidx.lifecycle.LifecycleOwner;
 
+import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationDatabase;
+import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationResult;
 import com.mrcs.andr.objectdistanceestimatorapp.camera.CameraController;
+import com.mrcs.andr.objectdistanceestimatorapp.distance.DistanceEstimator;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelInterpreter;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelObserver;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.TFLiteInterpreter;
@@ -90,7 +93,12 @@ public class AppContainer {
                                     ExecutorService inferenceExecutor,
                                     ExecutorService postProcessExecutor,
                                     ExecutorService detectionExecutor) throws Exception {
-        ImageProcessor preProcessor = new TFLitePreProcessor(letterBoxObserver);
+        DistanceEstimator distanceEstimator = new DistanceEstimator();
+        ILetterBoxObserver chainedObserver = params -> {
+            distanceEstimator.onLetterBoxComputed(params);
+            if (letterBoxObserver != null) letterBoxObserver.onLetterBoxComputed(params);
+        };
+        ImageProcessor preProcessor = new TFLitePreProcessor(chainedObserver);
         ModelInterpreter modelInterpreter = new TFLiteInterpreter(context);
         List<ModelObserver> observers = new ArrayList<>();
         observers.add(modelObserver);
@@ -114,6 +122,17 @@ public class AppContainer {
         this.modelManager = new ModelManager(modelInterpreter, preProcessor, detectionUpdated,
                 tracker, processingChain, 512, resolvedPreProcess, resolvedInference, resolvedPostProcess, resolvedDetection);
         this.modelManager.loadModel("yolo11_kitti_float16.tflite");
+        this.modelManager.setDistanceEstimator(distanceEstimator);
+
+        // Load calibration from database on a background thread and pass to the estimator
+        ExecutorService calibrationExecutor = resolveExecutor(null);
+        calibrationExecutor.execute(() -> {
+            CalibrationResult cal = CalibrationDatabase.getInstance(context)
+                    .calibrationDao().getLatest();
+            if (cal != null) {
+                distanceEstimator.setCalibration(cal);
+            }
+        });
     }
 
     /**

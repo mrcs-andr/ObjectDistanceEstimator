@@ -46,6 +46,12 @@ public class CalibrationResult {
     /** Timestamp of calibration (milliseconds since epoch) */
     public long timestamp;
 
+    /** Height of the camera above the ground plane, in metres */
+    public double cameraHeight = 1.5;
+
+    /** Camera pitch angle in degrees (positive = tilted downward toward ground) */
+    public double cameraPitch = 0.0;
+
     public CalibrationResult() {
     }
 
