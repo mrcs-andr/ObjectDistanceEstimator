@@ -1,6 +1,7 @@
 package com.mrcs.andr.objectdistanceestimatorapp.calibration;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 /**
@@ -41,6 +42,7 @@ public class ExtrinsicsCalibrationResult {
     public ExtrinsicsCalibrationResult() {
     }
 
+    @Ignore
     public ExtrinsicsCalibrationResult(double cameraX, double cameraY, double cameraZ,
                                         double cameraYaw, double cameraPitch, double cameraRoll,
                                         long timestamp) {

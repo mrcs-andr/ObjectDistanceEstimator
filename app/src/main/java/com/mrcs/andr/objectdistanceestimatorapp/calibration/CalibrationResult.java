@@ -1,6 +1,7 @@
 package com.mrcs.andr.objectdistanceestimatorapp.calibration;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 /**
@@ -55,6 +56,7 @@ public class CalibrationResult {
     public CalibrationResult() {
     }
 
+    @Ignore
     public CalibrationResult(double fx, double fy, double cx, double cy,
                               double k1, double k2, double p1, double p2, double k3,
                               double rmsError, long timestamp) {

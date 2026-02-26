@@ -250,7 +250,8 @@ public class ByteTracker implements IObjectTracker {
             KalmanFilter kf = new KalmanFilter(8, 4, 0, CvType.CV_32F);
 
             // Transition matrix: constant-velocity model
-            kf.transitionMatrix.put(0, 0,
+            Mat transitionMatrix = kf.get_transitionMatrix();
+            transitionMatrix.put(0, 0,
                     1, 0, 0, 0, 1, 0, 0, 0,
                     0, 1, 0, 0, 0, 1, 0, 0,
                     0, 0, 1, 0, 0, 0, 1, 0,
@@ -259,21 +260,40 @@ public class ByteTracker implements IObjectTracker {
                     0, 0, 0, 0, 0, 1, 0, 0,
                     0, 0, 0, 0, 0, 0, 1, 0,
                     0, 0, 0, 0, 0, 0, 0, 1);
+            kf.set_transitionMatrix(transitionMatrix);
+            transitionMatrix.release();
 
             // Measurement matrix: observe position and size only
-            kf.measurementMatrix.put(0, 0,
+            Mat measurementMatrix = kf.get_measurementMatrix();
+            measurementMatrix.put(0, 0,
                     1, 0, 0, 0, 0, 0, 0, 0,
                     0, 1, 0, 0, 0, 0, 0, 0,
                     0, 0, 1, 0, 0, 0, 0, 0,
                     0, 0, 0, 1, 0, 0, 0, 0);
+            kf.set_measurementMatrix(measurementMatrix);
+            measurementMatrix.release();
 
-            Core.setIdentity(kf.processNoiseCov, new Scalar(1e-2));
-            Core.setIdentity(kf.measurementNoiseCov, new Scalar(1e-1));
-            Core.setIdentity(kf.errorCovPost, new Scalar(1.0));
+            Mat processNoiseCov = kf.get_processNoiseCov();
+            Core.setIdentity(processNoiseCov, new Scalar(1e-2));
+            kf.set_processNoiseCov(processNoiseCov);
+            processNoiseCov.release();
+
+            Mat measurementNoiseCov = kf.get_measurementNoiseCov();
+            Core.setIdentity(measurementNoiseCov, new Scalar(1e-1));
+            kf.set_measurementNoiseCov(measurementNoiseCov);
+            measurementNoiseCov.release();
+
+            Mat errorCovPost = kf.get_errorCovPost();
+            Core.setIdentity(errorCovPost, new Scalar(1.0));
+            kf.set_errorCovPost(errorCovPost);
+            errorCovPost.release();
 
             // Initial state: zero velocity
-            kf.statePost.put(0, 0,
+            Mat statePost = kf.get_statePost();
+            statePost.put(0, 0,
                     det.x, det.y, det.width, det.height, 0, 0, 0, 0);
+            kf.set_statePost(statePost);
+            statePost.release();
 
             return kf;
         }
