@@ -6,4 +6,8 @@
         android:title="@string/calibration"
         android:icon="@drawable/baseline_camera_alt_24"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_extrinsics_calibration"
+        android:title="@string/extrinsics_calibration"
+        app:showAsAction="never" />
 </menu>

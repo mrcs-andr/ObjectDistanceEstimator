@@ -13,4 +13,22 @@
     <string name="camera_height_hint">e.g. 1.5</string>
     <string name="camera_pitch_label">Camera pitch (°):</string>
     <string name="camera_pitch_hint">e.g. 0.0</string>
+    <!-- Extrinsics calibration -->
+    <string name="extrinsics_calibration">Pose Calibration (ArUco)</string>
+    <string name="title_activity_extrinsics_calibration">Pose Calibration</string>
+    <string name="extrinsics_marker_size_label">Marker size (m):</string>
+    <string name="extrinsics_marker_size_hint">e.g. 0.15</string>
+    <string name="extrinsics_marker_world_section">Marker world position (optional)</string>
+    <string name="extrinsics_marker_world_x_label">Marker X (m):</string>
+    <string name="extrinsics_marker_world_y_label">Marker Y (m):</string>
+    <string name="extrinsics_marker_world_z_label">Marker Z (m):</string>
+    <string name="extrinsics_marker_world_yaw_label">Marker yaw (°):</string>
+    <string name="extrinsics_marker_coord_hint">e.g. 0.0</string>
+    <string name="extrinsics_marker_angle_hint">e.g. 0.0</string>
+    <string name="extrinsics_save_button">Save Pose</string>
+    <string name="extrinsics_status_searching">Searching for ArUco marker…</string>
+    <string name="extrinsics_status_detected">Marker %d\nX=%.3f m  Y=%.3f m  Z=%.3f m\nYaw=%.1f°  Pitch=%.1f°  Roll=%.1f°</string>
+    <string name="extrinsics_no_intrinsics">No intrinsics calibration found. Please calibrate intrinsics first.</string>
+    <string name="extrinsics_no_pose">No pose detected yet.</string>
+    <string name="extrinsics_saved">Camera pose saved.</string>
 </resources>
