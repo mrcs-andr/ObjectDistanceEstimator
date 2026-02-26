@@ -3,6 +3,7 @@ package com.mrcs.andr.objectdistanceestimatorapp.calibration;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
@@ -121,8 +122,7 @@ public class ArucoMarkerDetector {
                             0, calibration.fy, calibration.cy,
                             0,             0,              1);
 
-        Mat distCoeffs = new Mat(1, 5, CvType.CV_64F);
-        distCoeffs.put(0, 0,
+        MatOfDouble distCoeffs = new MatOfDouble(
                 calibration.k1, calibration.k2,
                 calibration.p1, calibration.p2,
                 calibration.k3);
