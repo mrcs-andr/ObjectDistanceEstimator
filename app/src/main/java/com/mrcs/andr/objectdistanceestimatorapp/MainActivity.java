@@ -14,12 +14,14 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationDatabase;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelObserver;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.Detection;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.IDetectionUpdated;
@@ -31,6 +33,8 @@ import org.opencv.android.OpenCVLoader;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity implements IDetectionUpdated, ModelObserver, ILetterBoxObserver {
 
@@ -43,6 +47,8 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     private float fps = 0f;
     private PreviewView previewView;
     private AppContainer appContainer;
+    private boolean hasIntrinsicsCalibration = false;
+    private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Camera Permission Launcher: ask for camera permission
@@ -71,6 +77,8 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         }
 
         setContentView(R.layout.activity_main);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
         this.detectionOverlayView = findViewById(R.id.overlayView);
         this.tvLog = findViewById(R.id.tvLog);
         this.tvHud = findViewById(R.id.tvHud);
@@ -94,6 +102,21 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
         return true;
+    }
+
+    /**
+     * Prepare the menu before it is displayed; disables extrinsics calibration
+     * if no intrinsics calibration has been performed yet.
+     * @param menu the options menu as last shown or first initialized.
+     * @return true for the menu to be displayed.
+     */
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem extrinsicsItem = menu.findItem(R.id.action_extrinsics_calibration);
+        if (extrinsicsItem != null) {
+            extrinsicsItem.setEnabled(hasIntrinsicsCalibration);
+        }
+        return super.onPrepareOptionsMenu(menu);
     }
 
     /**
@@ -125,6 +148,23 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
                 == PackageManager.PERMISSION_GRANTED) {
             ensureModelAndStartCamera();
         }
+    }
+
+    /**
+     * On Resume Activity lifecycle event. Checks whether intrinsics calibration
+     * has been performed and refreshes the options menu accordingly.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        dbExecutor.execute(() -> {
+            boolean hasCalibration = CalibrationDatabase.getInstance(getApplicationContext())
+                    .calibrationDao().getLatest() != null;
+            runOnUiThread(() -> {
+                hasIntrinsicsCalibration = hasCalibration;
+                invalidateOptionsMenu();
+            });
+        });
     }
 
     /**
@@ -173,6 +213,7 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         if(this.appContainer!= null){
             this.appContainer.destroy();
         }
+        dbExecutor.shutdown();
     }
 
     /**
