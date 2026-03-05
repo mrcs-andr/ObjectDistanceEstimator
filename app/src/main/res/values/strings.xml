@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ObjectDistanceEstimatorApp</string>
+    <string name="app_name">Distance Estimator</string>
     <string name="calibration">Calibration</string>
     <string name="title_activity_intrinsics_calibration">Intrinsics Calibration</string>
     <string name="calibration_start">Calibrate</string>
@@ -13,6 +13,12 @@
     <string name="camera_height_hint">e.g. 1.5</string>
     <string name="camera_pitch_label">Camera pitch (°):</string>
     <string name="camera_pitch_hint">e.g. 0.0</string>
+
+    <string name="calibration_rows_cols_label">Board rows and columns:</string>
+    <string name="calibration_rows_cols_hint">e.g. 6x7</string>
+    <string name="calibration_square_size_label">Square size (mm):</string>
+    <string name="calibration_square_size_hint">e.g. 25.0</string>
+
     <!-- Extrinsics calibration -->
     <string name="extrinsics_calibration">Pose Calibration (ArUco)</string>
     <string name="title_activity_extrinsics_calibration">Pose Calibration</string>

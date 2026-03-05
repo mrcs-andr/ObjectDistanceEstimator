@@ -60,18 +60,29 @@
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/camera_height_label"
+                android:layout_weight="2"
+                android:text="@string/calibration_rows_cols_label"
                 android:textColor="@android:color/white" />
 
             <EditText
-                android:id="@+id/etCameraHeight"
+                android:id="@+id/etRows"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="@string/camera_height_hint"
+                android:hint="@string/calibration_rows_cols_hint"
                 android:inputType="numberDecimal"
-                android:text="1.5"
+                android:text="6"
+                android:textColor="@android:color/white"
+                android:textColorHint="#AAAAAA" />
+
+            <EditText
+                android:id="@+id/etCols"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/calibration_rows_cols_hint"
+                android:inputType="numberDecimal"
+                android:text="7"
                 android:textColor="@android:color/white"
                 android:textColorHint="#AAAAAA" />
 
@@ -86,18 +97,18 @@
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/camera_pitch_label"
+                android:layout_weight="2"
+                android:text="@string/calibration_square_size_label"
                 android:textColor="@android:color/white" />
 
             <EditText
-                android:id="@+id/etCameraPitch"
+                android:id="@+id/etSquareSize"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/camera_pitch_hint"
+                android:layout_weight="2"
+                android:hint="@string/calibration_square_size_hint"
                 android:inputType="numberDecimal|numberSigned"
-                android:text="0.0"
+                android:text="5"
                 android:textColor="@android:color/white"
                 android:textColorHint="#AAAAAA" />
 

@@ -32,16 +32,13 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
 
     private static final String TAG = "IntrinsicsCalibration";
     private static final int REQUIRED_IMAGE_COUNT = 20;
-    private static final int CHESSBOARD_COLS = 9;
-    private static final int CHESSBOARD_ROWS = 6;
-    private static final int SQUARE_SIZE_MM = 25;
-
     private int savedImageCount = 0;
     private TextView tvLabel;
     private ProgressBar pbCalibration;
     private Button btnCalibrate;
-    private EditText etCameraHeight;
-    private EditText etCameraPitch;
+    private EditText etChessRows;
+    private EditText etChessCols;
+    private EditText etSquareSize;
     private CameraController cameraController;
     private final ExecutorService calibrationExecutor = Executors.newSingleThreadExecutor();
 
@@ -59,8 +56,12 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
         this.btnCalibrate = findViewById(R.id.buttonCalibrate);
         this.tvLabel = findViewById(R.id.tvCount);
         this.pbCalibration = findViewById(R.id.progressCalibration);
-        this.etCameraHeight = findViewById(R.id.etCameraHeight);
-        this.etCameraPitch = findViewById(R.id.etCameraPitch);
+
+        //Calibration parameters input fields
+        this.etChessCols = findViewById(R.id.etCols);
+        this.etChessRows = findViewById(R.id.etRows);
+        this.etSquareSize = findViewById(R.id.etSquareSize);
+
         this.cameraController = new CameraController(this, this, null, previewView);
         this.cameraController.setMode(CameraController.Mode.CAPTURE);
         this.cameraController.start();
@@ -168,14 +169,19 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
         btnCalibrate.setEnabled(false);
 
         // Read UI values on the main thread before launching background work
-        double cameraHeight = 1.5;
-        try { cameraHeight = Double.parseDouble(etCameraHeight.getText().toString()); }
+        int tmpRows = 0;
+        try { tmpRows =Integer.parseInt(etChessRows.getText().toString()); }
         catch (NumberFormatException ignored) {}
-        double cameraPitch = 0.0;
-        try { cameraPitch = Double.parseDouble(etCameraPitch.getText().toString()); }
+        int tmpCols = 0;
+        try { tmpCols = Integer.parseInt(etChessCols.getText().toString()); }
         catch (NumberFormatException ignored) {}
-        final double finalCameraHeight = cameraHeight;
-        final double finalCameraPitch = cameraPitch;
+        int tmpSquareSize = 0;
+        try { tmpSquareSize = Integer.parseInt(etSquareSize.getText().toString()); }
+        catch (NumberFormatException ignored) {}
+
+        final int chessRows = tmpRows;
+        final int chessCols = tmpCols;
+        final int squareSize = tmpSquareSize;
 
         AlertDialog progressDialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.calibration_in_progress_title)
@@ -189,13 +195,13 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
                 File imagesDir = getCalibrationImagesDir();
                 ChessboardDatasetLoader loader = new ChessboardDatasetLoader();
                 ChessboardDatasetLoader.Dataset dataset = loader.loadAndDectect(
-                        imagesDir, CHESSBOARD_ROWS, CHESSBOARD_COLS, SQUARE_SIZE_MM);
+                        imagesDir, chessRows, chessCols, squareSize);
 
                 CalibrationRunner.Result calibResult = CalibrationRunner.Result.calibrate(
                         dataset.imagePoints, dataset.objectsPoints, dataset.imageSize);
 
                 CalibrationResult dbResult = toCalibrationResult(
-                        calibResult, finalCameraHeight, finalCameraPitch);
+                        calibResult, 0, 0);
                 calibResult.cameraMatrix.release();
                 calibResult.distCoeffs.release();
 

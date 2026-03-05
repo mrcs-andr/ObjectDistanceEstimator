@@ -19,6 +19,7 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationDatabase;
@@ -75,14 +76,14 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         } else {
             Log.d("MainActivity", "OpenCV successfully loaded!");
         }
-
-        setContentView(R.layout.activity_main);
+        this.setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         this.detectionOverlayView = findViewById(R.id.overlayView);
         this.tvLog = findViewById(R.id.tvLog);
         this.tvHud = findViewById(R.id.tvHud);
         this.previewView = findViewById(R.id.previewView);
+        /*
         ViewCompat.setOnApplyWindowInsetsListener(tvHud, (v, insets) -> {
             Insets systemBars = insets.getInsets(
                     WindowInsetsCompat.Type.systemBars()
@@ -90,6 +91,8 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
             v.setTranslationY(systemBars.top + 16);
             return insets;
         });
+
+         */
         requestCameraPermission();
     }
 
