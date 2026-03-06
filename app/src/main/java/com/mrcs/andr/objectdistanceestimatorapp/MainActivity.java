@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
 
     /**
      * Prepare the menu before it is displayed; disables extrinsics calibration
-     * if no intrinsics calibration has been performed yet.
+     * and view intrinsics if no intrinsics calibration has been performed yet.
      * @param menu the options menu as last shown or first initialized.
      * @return true for the menu to be displayed.
      */
@@ -118,6 +118,10 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
         MenuItem extrinsicsItem = menu.findItem(R.id.action_extrinsics_calibration);
         if (extrinsicsItem != null) {
             extrinsicsItem.setEnabled(hasIntrinsicsCalibration);
+        }
+        MenuItem viewIntrinsicsItem = menu.findItem(R.id.action_view_intrinsics);
+        if (viewIntrinsicsItem != null) {
+            viewIntrinsicsItem.setEnabled(hasIntrinsicsCalibration);
         }
         return super.onPrepareOptionsMenu(menu);
     }
@@ -129,6 +133,10 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
      */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if(item.getItemId() == R.id.action_view_intrinsics){
+            startActivity(new Intent(this, IntrinsicsViewActivity.class));
+            return true;
+        }
         if(item.getItemId() == R.id.action_intrinsics_calibration){
             startActivity(new Intent(this, IntrinsicsCalibrationActivity.class));
             return true;
