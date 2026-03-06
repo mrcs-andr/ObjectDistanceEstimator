@@ -19,6 +19,23 @@
     <string name="calibration_square_size_label">Square size (mm):</string>
     <string name="calibration_square_size_hint">e.g. 25.0</string>
 
+    <!-- Intrinsics view -->
+    <string name="view_intrinsics">View Intrinsics</string>
+    <string name="title_activity_intrinsics_view">Intrinsics</string>
+    <string name="intrinsics_view_timestamp">Calibrated on: %s</string>
+    <string name="intrinsics_view_camera_matrix_header">Camera Matrix</string>
+    <string name="intrinsics_view_distortion_header">Distortion Coefficients</string>
+    <string name="intrinsics_view_fx_label">fx (px):</string>
+    <string name="intrinsics_view_fy_label">fy (px):</string>
+    <string name="intrinsics_view_cx_label">cx (px):</string>
+    <string name="intrinsics_view_cy_label">cy (px):</string>
+    <string name="intrinsics_view_k1_label">k1:</string>
+    <string name="intrinsics_view_k2_label">k2:</string>
+    <string name="intrinsics_view_k3_label">k3:</string>
+    <string name="intrinsics_view_p1_label">p1:</string>
+    <string name="intrinsics_view_p2_label">p2:</string>
+    <string name="intrinsics_view_rms_label">RMS error:</string>
+
     <!-- Extrinsics calibration -->
     <string name="extrinsics_calibration">Pose Calibration (ArUco)</string>
     <string name="title_activity_extrinsics_calibration">Pose Calibration</string>
