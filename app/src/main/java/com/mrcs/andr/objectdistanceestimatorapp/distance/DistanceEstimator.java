@@ -155,10 +155,10 @@ public class DistanceEstimator implements ILetterBoxObserver {
             return (float) (t * Math.sqrt(dwx*dwx + dwy*dwy + dwz*dwz));
         } else {
             // --- Legacy pitch-only path (Y-up world, intrinsics fallback) ---
-            double h = cal.cameraHeight;
+            double h = 10; //TODO: revisit to check the values.
             if (h <= 0) return Float.NaN;
 
-            double pitch = Math.toRadians(cal.cameraPitch);
+            double pitch = Math.toRadians(60);
             double cosp = Math.cos(pitch);
             double sinp = Math.sin(pitch);
 

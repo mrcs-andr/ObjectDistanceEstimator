@@ -197,11 +197,13 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
                 ChessboardDatasetLoader.Dataset dataset = loader.loadAndDectect(
                         imagesDir, chessRows, chessCols, squareSize);
 
+                Log.d("Calibration", "Loaded dataset with " + dataset.imagePoints.size() + " valid images for calibration.");
+
                 CalibrationRunner.Result calibResult = CalibrationRunner.Result.calibrate(
                         dataset.imagePoints, dataset.objectsPoints, dataset.imageSize);
 
                 CalibrationResult dbResult = toCalibrationResult(
-                        calibResult, 0, 0);
+                        calibResult);
                 calibResult.cameraMatrix.release();
                 calibResult.distCoeffs.release();
 
@@ -237,8 +239,7 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
      * Converts a {@link CalibrationRunner.Result} (raw OpenCV Mats) into a {@link CalibrationResult}
      * entity suitable for database persistence.
      */
-    private CalibrationResult toCalibrationResult(CalibrationRunner.Result r,
-                                                   double cameraHeight, double cameraPitch) {
+    private CalibrationResult toCalibrationResult(CalibrationRunner.Result r) {
         double fx = r.cameraMatrix.get(0, 0)[0];
         double fy = r.cameraMatrix.get(1, 1)[0];
         double cx = r.cameraMatrix.get(0, 2)[0];
@@ -253,8 +254,6 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
 
         CalibrationResult result = new CalibrationResult(fx, fy, cx, cy, k1, k2, p1, p2, k3,
                 r.reprojectionError, System.currentTimeMillis());
-        result.cameraHeight = cameraHeight;
-        result.cameraPitch = cameraPitch;
         return result;
     }
 }
