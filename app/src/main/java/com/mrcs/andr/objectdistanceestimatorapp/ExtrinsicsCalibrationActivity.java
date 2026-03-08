@@ -57,11 +57,13 @@ public class ExtrinsicsCalibrationActivity extends AppCompatActivity
             new AtomicReference<>(null);
 
     // Marker world-frame parameters – updated safely via TextWatchers on the main thread
-    private volatile double markerSizeM    = 0.15;
-    private volatile double markerWorldX   = 0.0;
-    private volatile double markerWorldY   = 0.0;
-    private volatile double markerWorldZ   = 0.0;
-    private volatile double markerWorldYaw = 0.0;
+    private volatile double markerSizeM      = 0.15;
+    private volatile double markerWorldX     = 0.0;
+    private volatile double markerWorldY     = 0.0;
+    private volatile double markerWorldZ     = 0.0;
+    private volatile double markerWorldYaw   = 0.0;
+    private volatile double markerWorldPitch = 0.0;
+    private volatile double markerWorldRoll  = 0.0;
 
     private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor();
 
@@ -82,11 +84,13 @@ public class ExtrinsicsCalibrationActivity extends AppCompatActivity
 
         btnSavePose.setOnClickListener(v -> onSaveClicked());
 
-        bindDoubleField(etMarkerSize,              v -> markerSizeM    = v, 0.15);
-        bindDoubleField(findViewById(R.id.etMarkerWorldX), v -> markerWorldX   = v, 0.0);
-        bindDoubleField(findViewById(R.id.etMarkerWorldY), v -> markerWorldY   = v, 0.0);
-        bindDoubleField(findViewById(R.id.etMarkerWorldZ), v -> markerWorldZ   = v, 0.0);
-        bindDoubleField(findViewById(R.id.etMarkerWorldYaw), v -> markerWorldYaw = v, 0.0);
+        bindDoubleField(etMarkerSize,              v -> markerSizeM      = v, 0.15);
+        bindDoubleField(findViewById(R.id.etMarkerWorldX),     v -> markerWorldX     = v, 0.0);
+        bindDoubleField(findViewById(R.id.etMarkerWorldY),     v -> markerWorldY     = v, 0.0);
+        bindDoubleField(findViewById(R.id.etMarkerWorldZ),     v -> markerWorldZ     = v, 0.0);
+        bindDoubleField(findViewById(R.id.etMarkerWorldYaw),   v -> markerWorldYaw   = v, 0.0);
+        bindDoubleField(findViewById(R.id.etMarkerWorldPitch), v -> markerWorldPitch = v, 0.0);
+        bindDoubleField(findViewById(R.id.etMarkerWorldRoll),  v -> markerWorldRoll  = v, 0.0);
 
         // Load intrinsics calibration from the database before starting the camera
         dbExecutor.execute(() -> {
@@ -129,7 +133,8 @@ public class ExtrinsicsCalibrationActivity extends AppCompatActivity
         try {
             pose = arucoDetector.detectAndEstimatePose(
                     frame, size,
-                    markerWorldX, markerWorldY, markerWorldZ, markerWorldYaw,
+                    markerWorldX, markerWorldY, markerWorldZ,
+                    markerWorldYaw, markerWorldPitch, markerWorldRoll,
                     cal);
         } finally {
             frame.release();

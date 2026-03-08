@@ -24,11 +24,11 @@ import java.util.List;
  * the full 6-DOF camera pose (position x,y,z and orientation yaw,pitch,roll)
  * relative to a user-specified world frame.
  *
- * <p>The marker is assumed to be placed flat on the ground (Z = 0 in its local frame,
- * Z axis pointing upward). The user may specify the marker's world-frame position
- * (markerWorldX, markerWorldY, markerWorldZ) and horizontal rotation (markerWorldYaw)
- * so the returned camera pose is expressed in global world coordinates rather than
- * the marker-relative frame.</p>
+ * <p>The user may specify the marker's world-frame position
+ * (markerWorldX, markerWorldY, markerWorldZ) and full orientation
+ * (markerWorldYaw, markerWorldPitch, markerWorldRoll) so the returned camera
+ * pose is expressed in global world coordinates rather than the marker-relative
+ * frame.</p>
  *
  * <p>Coordinate convention used throughout: Z-up world frame (X right, Y forward,
  * Z up). Euler angles follow ZYX convention (yaw → pitch → roll).</p>
@@ -98,22 +98,25 @@ public class ArucoMarkerDetector {
      * Detects ArUco markers in the given frame and estimates the full 6-DOF camera
      * pose from the first detected marker.
      *
-     * <p>The marker is assumed to be flat on the ground. The user provides the
-     * marker's centre position in world coordinates and its yaw rotation so the
-     * returned pose is expressed in the global world frame.</p>
+     * <p>The marker may be placed at any orientation in the world. The user provides the
+     * marker's centre position in world coordinates and its full orientation (yaw, pitch,
+     * roll) so the returned pose is expressed in the global world frame.</p>
      *
-     * @param frame           Input image (RGB or grayscale {@link Mat})
-     * @param markerSizeM     Physical side length of the printed marker in metres
-     * @param markerWorldX    Marker centre X in world coordinates (metres)
-     * @param markerWorldY    Marker centre Y in world coordinates (metres)
-     * @param markerWorldZ    Marker centre Z in world coordinates (metres, 0 = on ground)
-     * @param markerWorldYaw  Marker yaw rotation in world frame (degrees, rotation around Z)
-     * @param calibration     Camera intrinsics used for {@link Calib3d#solvePnP}
+     * @param frame             Input image (RGB or grayscale {@link Mat})
+     * @param markerSizeM       Physical side length of the printed marker in metres
+     * @param markerWorldX      Marker centre X in world coordinates (metres)
+     * @param markerWorldY      Marker centre Y in world coordinates (metres)
+     * @param markerWorldZ      Marker centre Z in world coordinates (metres, 0 = on ground)
+     * @param markerWorldYaw    Marker yaw rotation in world frame (degrees, rotation around Z)
+     * @param markerWorldPitch  Marker pitch rotation in world frame (degrees, rotation around Y)
+     * @param markerWorldRoll   Marker roll rotation in world frame (degrees, rotation around X)
+     * @param calibration       Camera intrinsics used for {@link Calib3d#solvePnP}
      * @return {@link PoseResult} with full 6-DOF if a marker was detected, {@code null} otherwise
      */
     public PoseResult detectAndEstimatePose(Mat frame, double markerSizeM,
                                              double markerWorldX, double markerWorldY,
                                              double markerWorldZ, double markerWorldYaw,
+                                             double markerWorldPitch, double markerWorldRoll,
                                              CalibrationResult calibration) {
         List<Mat> corners = new ArrayList<>();
         Mat ids = new Mat();
@@ -178,30 +181,39 @@ public class ArucoMarkerDetector {
         double camY_m = -(r(rotMat,0,1)*tx + r(rotMat,1,1)*ty + r(rotMat,2,1)*tz);
         double camZ_m = -(r(rotMat,0,2)*tx + r(rotMat,1,2)*ty + r(rotMat,2,2)*tz);
 
-        // --- Transform to global world frame using marker pose (Rz(mYaw) + translation) ---
-        // Rz(mYaw) = [[c, -s, 0], [s, c, 0], [0, 0, 1]]
-        double mYaw = Math.toRadians(markerWorldYaw);
-        double c = Math.cos(mYaw);
-        double s = Math.sin(mYaw);
+        // --- Transform to global world frame using full marker orientation ---
+        // R_marker = Rz(yaw) * Ry(pitch) * Rx(roll)
+        double mYaw   = Math.toRadians(markerWorldYaw);
+        double mPitch = Math.toRadians(markerWorldPitch);
+        double mRoll  = Math.toRadians(markerWorldRoll);
+        double cy = Math.cos(mYaw),   sy = Math.sin(mYaw);
+        double cp = Math.cos(mPitch), sp = Math.sin(mPitch);
+        double cr = Math.cos(mRoll),  sr = Math.sin(mRoll);
 
-        double camX_w = c * camX_m - s * camY_m + markerWorldX;
-        double camY_w = s * camX_m + c * camY_m + markerWorldY;
-        double camZ_w = camZ_m + markerWorldZ;
+        // R_marker rows:
+        //   [cy*cp,  cy*sp*sr - sy*cr,  cy*sp*cr + sy*sr]
+        //   [sy*cp,  sy*sp*sr + cy*cr,  sy*sp*cr - cy*sr]
+        //   [-sp,    cp*sr,             cp*cr            ]
+        double rm00 = cy*cp,  rm01 = cy*sp*sr - sy*cr,  rm02 = cy*sp*cr + sy*sr;
+        double rm10 = sy*cp,  rm11 = sy*sp*sr + cy*cr,  rm12 = sy*sp*cr - cy*sr;
+        double rm20 = -sp,    rm21 = cp*sr,              rm22 = cp*cr;
 
-        // --- Camera-to-world rotation in global frame: W = Rz(mYaw) * Rm^T ---
-        // W[row][col]:
-        //   row 0: c * Rm^T[0][col] - s * Rm^T[1][col] = c * Rm[col][0] - s * Rm[col][1]
-        //   row 1: s * Rm^T[0][col] + c * Rm^T[1][col] = s * Rm[col][0] + c * Rm[col][1]
-        //   row 2: Rm^T[2][col] = Rm[col][2]
+        double camX_w = rm00*camX_m + rm01*camY_m + rm02*camZ_m + markerWorldX;
+        double camY_w = rm10*camX_m + rm11*camY_m + rm12*camZ_m + markerWorldY;
+        double camZ_w = rm20*camX_m + rm21*camY_m + rm22*camZ_m + markerWorldZ;
+
+        // --- Camera-to-world rotation in global frame: W = R_marker * Rm^T ---
+        // W[row][col] = sum_k R_marker[row][k] * Rm^T[k][col]
+        //             = sum_k R_marker[row][k] * Rm[col][k]
         //
         // For col = 0: used for yaw / pitch
-        double w00 = c * r(rotMat,0,0) - s * r(rotMat,0,1);
-        double w10 = s * r(rotMat,0,0) + c * r(rotMat,0,1);
-        double w20 = r(rotMat,0,2);
+        double w00 = rm00*r(rotMat,0,0) + rm01*r(rotMat,0,1) + rm02*r(rotMat,0,2);
+        double w10 = rm10*r(rotMat,0,0) + rm11*r(rotMat,0,1) + rm12*r(rotMat,0,2);
+        double w20 = rm20*r(rotMat,0,0) + rm21*r(rotMat,0,1) + rm22*r(rotMat,0,2);
         // For col = 1: used for roll
-        double w21 = r(rotMat,1,2);
+        double w21 = rm20*r(rotMat,1,0) + rm21*r(rotMat,1,1) + rm22*r(rotMat,1,2);
         // For col = 2: used for roll
-        double w22 = r(rotMat,2,2);
+        double w22 = rm20*r(rotMat,2,0) + rm21*r(rotMat,2,1) + rm22*r(rotMat,2,2);
 
         // --- Extract ZYX Euler angles from W (R_c2w in global frame) ---
         // W = Rz(yaw) * Ry(pitch) * Rx(roll)
