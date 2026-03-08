@@ -4,8 +4,10 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,6 +50,7 @@ public class ExtrinsicsCalibrationActivity extends AppCompatActivity
     private TextView tvPoseStatus;
     private EditText etMarkerSize;
     private Button btnSavePose;
+    private ImageView ivDetectionOverlay;
 
     /** Latest successfully estimated pose, or {@code null} if none. */
     private final AtomicReference<ArucoMarkerDetector.PoseResult> latestPose =
@@ -71,6 +74,7 @@ public class ExtrinsicsCalibrationActivity extends AppCompatActivity
         this.tvPoseStatus = findViewById(R.id.tvPoseStatus);
         this.etMarkerSize = findViewById(R.id.etMarkerSize);
         this.btnSavePose  = findViewById(R.id.btnSavePose);
+        this.ivDetectionOverlay = findViewById(R.id.ivDetectionOverlay);
 
         this.arucoDetector = new ArucoMarkerDetector();
         this.cameraController = new CameraController(this, this, this, previewView);
@@ -141,11 +145,14 @@ public class ExtrinsicsCalibrationActivity extends AppCompatActivity
                         p.cameraX, p.cameraY, p.cameraZ,
                         p.cameraYaw, p.cameraPitch, p.cameraRoll));
                 btnSavePose.setEnabled(true);
+                ivDetectionOverlay.setImageBitmap(p.overlayBitmap);
+                ivDetectionOverlay.setVisibility(View.VISIBLE);
             });
         } else {
             runOnUiThread(() -> {
                 tvPoseStatus.setText(R.string.extrinsics_status_searching);
                 btnSavePose.setEnabled(false);
+                ivDetectionOverlay.setVisibility(View.INVISIBLE);
             });
         }
     }

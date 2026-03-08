@@ -20,6 +20,15 @@
             android:layout_height="match_parent"
             app:implementationMode="performance" />
 
+        <!-- Overlay showing detected marker outline and coordinate axes -->
+        <ImageView
+            android:id="@+id/ivDetectionOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="invisible"
+            android:contentDescription="@string/extrinsics_overlay_description" />
+
         <!-- Overlay status text shown on top of the preview -->
         <TextView
             android:id="@+id/tvPoseStatus"
