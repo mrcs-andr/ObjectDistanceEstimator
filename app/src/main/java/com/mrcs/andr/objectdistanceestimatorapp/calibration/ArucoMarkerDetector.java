@@ -1,5 +1,8 @@
 package com.mrcs.andr.objectdistanceestimatorapp.calibration;
 
+import android.graphics.Bitmap;
+
+import org.opencv.android.Utils;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -7,6 +10,7 @@ import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
+import org.opencv.core.Scalar;
 import org.opencv.objdetect.ArucoDetector;
 import org.opencv.objdetect.DetectorParameters;
 import org.opencv.objdetect.Dictionary;
@@ -35,6 +39,11 @@ import java.util.List;
  */
 public class ArucoMarkerDetector {
 
+    /** Colour used to draw the detected marker border (green in BGR). */
+    private static final Scalar MARKER_OUTLINE_COLOR = new Scalar(0, 255, 0);
+    /** Stroke width (px) used when drawing the coordinate axes. */
+    private static final int AXES_LINE_THICKNESS = 3;
+
     private final ArucoDetector arucoDetector;
 
     /**
@@ -55,10 +64,15 @@ public class ArucoMarkerDetector {
         public final double cameraRoll;
         /** ID of the detected marker. */
         public final int markerId;
+        /**
+         * Annotated camera frame with detected marker outline and coordinate axes drawn.
+         * Suitable for display in an overlay {@link android.widget.ImageView}.
+         */
+        public final Bitmap overlayBitmap;
 
         public PoseResult(double cameraX, double cameraY, double cameraZ,
                           double cameraYaw, double cameraPitch, double cameraRoll,
-                          int markerId) {
+                          int markerId, Bitmap overlayBitmap) {
             this.cameraX = cameraX;
             this.cameraY = cameraY;
             this.cameraZ = cameraZ;
@@ -66,6 +80,7 @@ public class ArucoMarkerDetector {
             this.cameraPitch = cameraPitch;
             this.cameraRoll = cameraRoll;
             this.markerId = markerId;
+            this.overlayBitmap = overlayBitmap;
         }
     }
 
@@ -195,6 +210,15 @@ public class ArucoMarkerDetector {
         double cameraYaw   = Math.toDegrees(Math.atan2(w10, w00));
         double cameraRoll  = Math.toDegrees(Math.atan2(w21, w22));
 
+        // Draw detected marker outline and coordinate axes onto the frame.
+        // The frame is owned by the caller and released after this method returns,
+        // so annotating it in-place is safe.
+        Objdetect.drawDetectedMarkers(frame, corners, ids, MARKER_OUTLINE_COLOR);
+        float axisLength = (float) (markerSizeM / 2.0);
+        Calib3d.drawFrameAxes(frame, cameraMatrix, distCoeffs, rvec, tvec, axisLength, AXES_LINE_THICKNESS);
+        Bitmap overlayBitmap = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(frame, overlayBitmap);
+
         // Release resources
         cameraMatrix.release();
         distCoeffs.release();
@@ -208,7 +232,7 @@ public class ArucoMarkerDetector {
         releaseAll(rejected);
 
         return new PoseResult(camX_w, camY_w, camZ_w,
-                cameraYaw, cameraPitch, cameraRoll, markerId);
+                cameraYaw, cameraPitch, cameraRoll, markerId, overlayBitmap);
     }
 
     /** Convenience accessor: rotMat.get(row, col)[0] */

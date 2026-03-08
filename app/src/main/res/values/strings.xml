@@ -56,4 +56,5 @@
     <string name="extrinsics_no_intrinsics">No intrinsics calibration found. Please calibrate intrinsics first.</string>
     <string name="extrinsics_no_pose">No pose detected yet.</string>
     <string name="extrinsics_saved">Camera pose saved.</string>
+    <string name="extrinsics_overlay_description">Detected ArUco marker with coordinate axes</string>
 </resources>
