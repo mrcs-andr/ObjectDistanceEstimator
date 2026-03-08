@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:layout_margin="20dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,7 +25,7 @@
             android:layout_height="wrap_content"
             android:text="@string/intrinsics_view_camera_matrix_header"
             android:textStyle="bold"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:paddingBottom="8dp" />
 
         <LinearLayout
@@ -113,7 +114,7 @@
             android:layout_height="wrap_content"
             android:text="@string/intrinsics_view_distortion_header"
             android:textStyle="bold"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:paddingBottom="8dp" />
 
         <LinearLayout

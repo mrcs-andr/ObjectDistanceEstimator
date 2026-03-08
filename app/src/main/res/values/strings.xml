@@ -45,7 +45,9 @@
     <string name="extrinsics_marker_world_x_label">Marker X (m):</string>
     <string name="extrinsics_marker_world_y_label">Marker Y (m):</string>
     <string name="extrinsics_marker_world_z_label">Marker Z (m):</string>
-    <string name="extrinsics_marker_world_yaw_label">Marker yaw (°):</string>
+    <string name="extrinsics_marker_world_yaw_label">Marker Yaw (°):</string>
+    <string name="extrinsics_marker_world_pitch_label">Marker Pitch (°):</string>
+    <string name="extrinsics_marker_world_roll_label">Marker Roll (°):</string>
     <string name="extrinsics_marker_coord_hint">e.g. 0.0</string>
     <string name="extrinsics_marker_angle_hint">e.g. 0.0</string>
     <string name="extrinsics_save_button">Save Pose</string>
