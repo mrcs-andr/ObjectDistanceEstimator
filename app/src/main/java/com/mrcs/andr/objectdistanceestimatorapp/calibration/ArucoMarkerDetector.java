@@ -1,6 +1,8 @@
 package com.mrcs.andr.objectdistanceestimatorapp.calibration;
 
+
 import android.graphics.Bitmap;
+import android.util.Log;
 
 import org.opencv.android.Utils;
 import org.opencv.calib3d.Calib3d;
@@ -11,6 +13,7 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.ArucoDetector;
 import org.opencv.objdetect.DetectorParameters;
 import org.opencv.objdetect.Dictionary;
@@ -84,13 +87,44 @@ public class ArucoMarkerDetector {
         }
     }
 
+    private DetectorParameters createDefaultDetectorParameters() {
+        DetectorParameters params = new DetectorParameters();
+
+        /*
+        params.set_adaptiveThreshWinSizeMin(5);
+        params.set_adaptiveThreshWinSizeMax(35);
+        params.set_adaptiveThreshWinSizeStep(10);
+        params.set_adaptiveThreshConstant(7);
+
+        params.set_minMarkerPerimeterRate(0.02);  // raise if you only expect large markers
+        params.set_maxMarkerPerimeterRate(4.0);
+
+        params.set_polygonalApproxAccuracyRate(0.03); // 0.03..0.05
+        params.set_minCornerDistanceRate(0.05);
+        params.set_minDistanceToBorder(3);
+
+        params.set_minOtsuStdDev(5.0);
+        params.set_perspectiveRemovePixelPerCell(8);  // 4..10
+        params.set_perspectiveRemoveIgnoredMarginPerCell(0.13f);
+
+        params.set_maxErroneousBitsInBorderRate(0.35f);
+        params.set_errorCorrectionRate(0.6f);
+        */
+
+        params.set_cornerRefinementMethod(1); // 0 = none, 1 = subpix, 2 = contour
+        params.set_cornerRefinementWinSize(5);           // try 3..7
+        params.set_cornerRefinementMaxIterations(30);
+        params.set_cornerRefinementMinAccuracy(0.1);
+        return params;
+    }
+
     /**
      * Creates an {@code ArucoMarkerDetector} using the {@code DICT_4X4_50} dictionary
      * with default detector parameters.
      */
     public ArucoMarkerDetector() {
-        Dictionary dictionary = Objdetect.getPredefinedDictionary(Objdetect.DICT_4X4_50);
-        DetectorParameters parameters = new DetectorParameters();
+        Dictionary dictionary = Objdetect.getPredefinedDictionary(Objdetect.DICT_4X4_250);
+        DetectorParameters parameters = createDefaultDetectorParameters();
         this.arucoDetector = new ArucoDetector(dictionary, parameters);
     }
 
@@ -122,11 +156,16 @@ public class ArucoMarkerDetector {
         Mat ids = new Mat();
         List<Mat> rejected = new ArrayList<>();
 
-        arucoDetector.detectMarkers(frame, corners, ids, rejected);
+        Mat grayFrame = new Mat();
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGRA2BGR); // ensure 3-channel input
+        Imgproc.cvtColor(frame, grayFrame, Imgproc.COLOR_BGR2GRAY); // ensure 3-channel input
+
+        arucoDetector.detectMarkers(grayFrame, corners, ids, rejected);
 
         if (ids.empty() || corners.isEmpty()) {
             ids.release();
             releaseAll(rejected);
+            grayFrame.release();
             return null;
         }
 
@@ -225,6 +264,7 @@ public class ArucoMarkerDetector {
         // Draw detected marker outline and coordinate axes onto the frame.
         // The frame is owned by the caller and released after this method returns,
         // so annotating it in-place is safe.
+        Log.d("ArucoMarkerDetector", frame.total() + ", " + frame.channels());
         Objdetect.drawDetectedMarkers(frame, corners, ids, MARKER_OUTLINE_COLOR);
         float axisLength = (float) (markerSizeM / 2.0);
         Calib3d.drawFrameAxes(frame, cameraMatrix, distCoeffs, rvec, tvec, axisLength, AXES_LINE_THICKNESS);
@@ -239,6 +279,7 @@ public class ArucoMarkerDetector {
         rvec.release();
         tvec.release();
         rotMat.release();
+        grayFrame.release();
         ids.release();
         releaseAll(corners);
         releaseAll(rejected);

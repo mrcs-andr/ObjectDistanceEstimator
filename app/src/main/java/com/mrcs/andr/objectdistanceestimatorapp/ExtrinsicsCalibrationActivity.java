@@ -1,7 +1,14 @@
 package com.mrcs.andr.objectdistanceestimatorapp;
 
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -24,6 +31,8 @@ import com.mrcs.andr.objectdistanceestimatorapp.camera.IFrameAvailableListener;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -129,6 +138,15 @@ public class ExtrinsicsCalibrationActivity extends AppCompatActivity
         Mat frame = new Mat();
         Utils.bitmapToMat(bmp, frame);
 
+
+        /*
+        try {
+            saveBitmapAsJpegToDownloads(this, "extrinsics_calibration_input", bmp, 100 );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        */
+
         ArucoMarkerDetector.PoseResult pose;
         try {
             pose = arucoDetector.detectAndEstimatePose(
@@ -160,6 +178,41 @@ public class ExtrinsicsCalibrationActivity extends AppCompatActivity
                 ivDetectionOverlay.setVisibility(View.INVISIBLE);
             });
         }
+    }
+
+    public static Uri saveBitmapAsJpegToDownloads(Context context, String fileNameNoExt, Bitmap bitmap, int quality) throws IOException {
+        String displayName = fileNameNoExt.endsWith(".jpg") || fileNameNoExt.endsWith(".jpeg")
+                ? fileNameNoExt
+                : (fileNameNoExt + ".jpg");
+
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, displayName);
+        values.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+            values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+        }
+
+        ContentResolver cr = context.getContentResolver();
+        Uri uri = cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+        if (uri == null) throw new IOException("Failed to create MediaStore record");
+
+        try (OutputStream out = cr.openOutputStream(uri, "w")) {
+            if (out == null) throw new IOException("Failed to open OutputStream");
+            if (!bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)) {
+                throw new IOException("Bitmap.compress(JPEG) failed");
+            }
+            out.flush();
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContentValues done = new ContentValues();
+            done.put(MediaStore.MediaColumns.IS_PENDING, 0);
+            cr.update(uri, done, null, null);
+        }
+
+        return uri;
     }
 
     /**
