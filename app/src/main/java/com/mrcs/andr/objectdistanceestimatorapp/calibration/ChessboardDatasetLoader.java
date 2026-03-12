@@ -119,7 +119,7 @@ public final class ChessboardDatasetLoader {
      * @param squareSize The size of each square of the board.
      * @return MatOfPoint3f containing the 3D coordinates of the chessboard corners in the world coordinate system.
      */
-    private static MatOfPoint3f createObjectPoints(int cols, int rows, float squareSize) {
+    public static MatOfPoint3f createObjectPoints(int cols, int rows, float squareSize) {
         List<Point3> pts = new ArrayList<>(cols * rows);
         for (int y = 0; y < rows; y++) {
             for (int x = 0; x < cols; x++) {

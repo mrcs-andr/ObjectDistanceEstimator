@@ -103,12 +103,26 @@ public class CameraController {
                         this.imageCapture = new ImageCapture.Builder()
                                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                                 .build();
-                        cameraProvider.bindToLifecycle(
-                                lifecycleOwner,
-                                cameraSelector,
-                                preview,
-                                imageCapture
-                        );
+                        if (this.frameAvailableListener != null) {
+                            ImageAnalysis imageAnalysisForCapture = new ImageAnalysis.Builder()
+                                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                    .build();
+                            imageAnalysisForCapture.setAnalyzer(cameraExecutor, new ImageAnalyser(this.frameAvailableListener));
+                            cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    cameraSelector,
+                                    preview,
+                                    imageCapture,
+                                    imageAnalysisForCapture
+                            );
+                        } else {
+                            cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    cameraSelector,
+                                    preview,
+                                    imageCapture
+                            );
+                        }
                         break;
                 }
             } catch (Exception e) {

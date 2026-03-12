@@ -20,6 +20,28 @@
             android:layout_height="match_parent"
             app:implementationMode="performance" />
 
+        <!-- Overlay showing detected chessboard corners -->
+        <ImageView
+            android:id="@+id/ivChessboardOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="invisible"
+            android:contentDescription="@string/intrinsics_chessboard_overlay_description" />
+
+        <!-- Detection status text shown on top of the preview -->
+        <TextView
+            android:id="@+id/tvChessboardStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="8dp"
+            android:background="#AA000000"
+            android:padding="6dp"
+            android:text="@string/intrinsics_status_searching"
+            android:textColor="@android:color/white"
+            android:textSize="13sp" />
+
     </FrameLayout>
 
     <!-- Bottom panel: counter + progress + buttons -->
