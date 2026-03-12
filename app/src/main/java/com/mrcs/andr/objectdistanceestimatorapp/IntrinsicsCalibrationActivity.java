@@ -14,10 +14,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.ImageCapture;
-import androidx.camera.core.ImageCaptureException;
 import androidx.camera.view.PreviewView;
 
 import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationDatabase;
@@ -36,9 +33,11 @@ import org.opencv.core.Size;
 import org.opencv.core.TermCriteria;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class IntrinsicsCalibrationActivity extends AppCompatActivity
         implements IFrameAvailableListener {
@@ -60,6 +59,15 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
     private volatile int liveChessRows = 6;
     private volatile int liveChessCols = 7;
     private Bitmap lastOverlayBitmap = null;
+
+    // Latest detected corners from the live preview (updated on camera executor thread)
+    private final AtomicReference<MatOfPoint2f> latestCorners = new AtomicReference<>(null);
+    private volatile Size latestFrameSize = null;
+
+    // In-memory calibration data accumulated across "Take" presses
+    private final List<Mat> accumulatedImagePoints = new ArrayList<>();
+    private final List<Mat> accumulatedObjectPoints = new ArrayList<>();
+    private Size calibImageSize = null;
 
     /**
      * On Create method for the IntrinsicsCalibrationActivity. Sets the content view to the activity_intrinsics_calibration layout.
@@ -87,7 +95,7 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
         bindIntField(etChessCols, v -> liveChessCols = v, 7);
 
         this.cameraController = new CameraController(this, this, this, previewView);
-        this.cameraController.setMode(CameraController.Mode.CAPTURE);
+        this.cameraController.setMode(CameraController.Mode.ANALYSIS);
         this.cameraController.start();
         bntCapture.setOnClickListener(v -> onTakeClicked());
         bntClear.setOnClickListener(v -> clearCalibrationImages());
@@ -95,58 +103,19 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
     }
 
     /**
-     * Returns the directory where calibration images should be stored. The directory is created if it does not exist.
-     * @return The directory for storing calibration images.
+     * Clears all accumulated in-memory calibration data and resets the saved image count and UI elements.
+     * Must be called on the UI thread (invoked from button click listeners only).
      */
-    private File getCalibrationImagesDir(){
-        File picturesRoot = this.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES);
-        File calibrationDir = new File(picturesRoot, "intrinsics_images");
-        if (!calibrationDir.exists() && !calibrationDir.mkdirs()) {
-            throw new RuntimeException("Could not create dir: " + calibrationDir.getAbsolutePath());
-        }
-        return calibrationDir;
-    }
-
-    /**
-     * Deletes the calibration images folder and all its contents.
-     */
-    private void deleteCalibrationFolder(){
-        File dir = this.getCalibrationImagesDir();
-        if(dir.exists())
-        {
-            File[] files = dir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (!file.delete()) {
-                        Log.e(TAG, "Could not delete file: " + file.getAbsolutePath());
-                    }
-                }
-            }
-            if (!dir.delete()) {
-                Log.e(TAG, "Could not delete calibration directory: " + dir.getAbsolutePath());
-            }
-        }
-    }
-
-    /**
-     * Clears all saved calibration images from the storage and resets the saved image count and UI elements.
-     */
-    private void clearCalibrationImages(){
-        File dir = this.getCalibrationImagesDir();
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (!file.delete()) {
-                    Log.e(TAG, "Could not delete file: " + file.getAbsolutePath());
-                }
-            }
-        }
+    private void clearCalibrationImages() {
+        for (Mat m : accumulatedImagePoints) m.release();
+        for (Mat m : accumulatedObjectPoints) m.release();
+        accumulatedImagePoints.clear();
+        accumulatedObjectPoints.clear();
+        calibImageSize = null;
         this.savedImageCount = 0;
-        this.runOnUiThread(() -> {
-            tvLabel.setText(savedImageCount + " / " + REQUIRED_IMAGE_COUNT);
-            pbCalibration.setProgress(0);
-            btnCalibrate.setEnabled(false);
-        });
+        tvLabel.setText(savedImageCount + " / " + REQUIRED_IMAGE_COUNT);
+        pbCalibration.setProgress(0);
+        btnCalibrate.setEnabled(false);
     }
 
     /**
@@ -157,55 +126,70 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
         super.onDestroy();
         this.cameraController.stop();
         this.calibrationExecutor.shutdown();
-        this.deleteCalibrationFolder();
+        for (Mat m : accumulatedImagePoints) m.release();
+        for (Mat m : accumulatedObjectPoints) m.release();
+        if (lastOverlayBitmap != null) {
+            lastOverlayBitmap.recycle();
+            lastOverlayBitmap = null;
+        }
     }
 
     /**
-     * Handles the take picture button click event. Captures an image and saves it to the calibration images directory.
+     * Handles the take picture button click event. If a chessboard is currently detected in the live
+     * preview, stores the detected corners in memory for later calibration. Rejects the capture if
+     * no chessboard is detected or the square size is not configured.
      */
-    private void onTakeClicked(){
-        File dir = this.getCalibrationImagesDir();
-        File file = new File(dir, "img_" + System.currentTimeMillis() + ".jpg");
-        this.cameraController.takePicture(file, new ImageCapture.OnImageSavedCallback() {
-            @Override
-            public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                ++savedImageCount;
-                runOnUiThread(() -> {
-                    tvLabel.setText(savedImageCount + " / " + REQUIRED_IMAGE_COUNT);
-                    pbCalibration.setProgress((int) ((savedImageCount / (float) REQUIRED_IMAGE_COUNT) * 100));
-                    if (savedImageCount >= REQUIRED_IMAGE_COUNT) {
-                        btnCalibrate.setEnabled(true);
-                    }
-                });
-            }
-            @Override
-            public void onError(@NonNull ImageCaptureException exception) {
-                Log.e(TAG, "Error saving image: " + exception.getMessage());
-            }
-        });
+    private void onTakeClicked() {
+        MatOfPoint2f snap = latestCorners.get();
+        if (snap == null) {
+            Toast.makeText(this, R.string.intrinsics_no_detection_toast, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int squareSizeMm = 0;
+        try { squareSizeMm = Integer.parseInt(etSquareSize.getText().toString()); }
+        catch (NumberFormatException ignored) {}
+        if (squareSizeMm <= 0) {
+            Toast.makeText(this, R.string.intrinsics_invalid_square_size_toast, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Clone the detected corners into the accumulated list
+        MatOfPoint2f cornersCopy = new MatOfPoint2f();
+        snap.copyTo(cornersCopy);
+        accumulatedImagePoints.add(cornersCopy);
+        accumulatedObjectPoints.add(
+                ChessboardDatasetLoader.createObjectPoints(liveChessCols, liveChessRows, squareSizeMm));
+
+        if (calibImageSize == null) {
+            calibImageSize = latestFrameSize;
+        }
+
+        ++savedImageCount;
+        tvLabel.setText(savedImageCount + " / " + REQUIRED_IMAGE_COUNT);
+        pbCalibration.setProgress((int) ((savedImageCount / (float) REQUIRED_IMAGE_COUNT) * 100));
+        if (savedImageCount >= REQUIRED_IMAGE_COUNT) {
+            btnCalibrate.setEnabled(true);
+        }
     }
 
     /**
-     * Starts the calibration process using the saved images. Runs on a background thread,
+     * Starts the calibration process using the accumulated in-memory data. Runs on a background thread,
      * shows a progress dialog while running, then displays the result and saves it to the database.
      */
     private void onCalibrateClicked() {
         btnCalibrate.setEnabled(false);
 
-        // Read UI values on the main thread before launching background work
-        int tmpRows = 0;
-        try { tmpRows =Integer.parseInt(etChessRows.getText().toString()); }
-        catch (NumberFormatException ignored) {}
-        int tmpCols = 0;
-        try { tmpCols = Integer.parseInt(etChessCols.getText().toString()); }
-        catch (NumberFormatException ignored) {}
-        int tmpSquareSize = 0;
-        try { tmpSquareSize = Integer.parseInt(etSquareSize.getText().toString()); }
-        catch (NumberFormatException ignored) {}
+        // Snapshot the accumulated in-memory data before launching background work
+        final List<Mat> imagePoints = new ArrayList<>(accumulatedImagePoints);
+        final List<Mat> objectPoints = new ArrayList<>(accumulatedObjectPoints);
+        final Size imageSize = calibImageSize;
 
-        final int chessRows = tmpRows;
-        final int chessCols = tmpCols;
-        final int squareSize = tmpSquareSize;
+        if (imagePoints.isEmpty() || imageSize == null) {
+            Toast.makeText(this, R.string.calibration_no_patterns, Toast.LENGTH_LONG).show();
+            btnCalibrate.setEnabled(savedImageCount >= REQUIRED_IMAGE_COUNT);
+            return;
+        }
 
         AlertDialog progressDialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.calibration_in_progress_title)
@@ -216,18 +200,12 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
 
         calibrationExecutor.execute(() -> {
             try {
-                File imagesDir = getCalibrationImagesDir();
-                ChessboardDatasetLoader loader = new ChessboardDatasetLoader();
-                ChessboardDatasetLoader.Dataset dataset = loader.loadAndDectect(
-                        imagesDir, chessRows, chessCols, squareSize);
-
-                Log.d("Calibration", "Loaded dataset with " + dataset.imagePoints.size() + " valid images for calibration.");
+                Log.d(TAG, "Running calibration with " + imagePoints.size() + " captured frames.");
 
                 CalibrationRunner.Result calibResult = CalibrationRunner.Result.calibrate(
-                        dataset.imagePoints, dataset.objectsPoints, dataset.imageSize);
+                        imagePoints, objectPoints, imageSize);
 
-                CalibrationResult dbResult = toCalibrationResult(
-                        calibResult);
+                CalibrationResult dbResult = toCalibrationResult(calibResult);
                 calibResult.cameraMatrix.release();
                 calibResult.distCoeffs.release();
 
@@ -276,14 +254,14 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
         double p2 = dist.length > 3 ? dist[3] : 0;
         double k3 = dist.length > 4 ? dist[4] : 0;
 
-        CalibrationResult result = new CalibrationResult(fx, fy, cx, cy, k1, k2, p1, p2, k3,
+        return new CalibrationResult(fx, fy, cx, cy, k1, k2, p1, p2, k3,
                 r.reprojectionError, System.currentTimeMillis());
-        return result;
     }
 
     /**
      * Processes each live camera frame: detects chessboard corners and draws them on the preview overlay.
-     * This allows the user to visually confirm whether the chessboard pattern is correctly detected before capturing.
+     * Also stores the latest detected corners in memory so that pressing "Take" can save them
+     * without any disk I/O.
      */
     @Override
     public void onFrameAvailable(Bitmap bmp) {
@@ -306,9 +284,22 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
         if (found) {
             Imgproc.cornerSubPix(gray, corners, new Size(11, 11), new Size(-1, -1),
                     new TermCriteria(TermCriteria.EPS + TermCriteria.MAX_ITER, 30, 0.001));
+
+            // Store a copy of the detected corners and frame size for use when "Take" is pressed.
+            // We intentionally do NOT release the previous latestCorners value here: doing so would
+            // introduce a race condition where the UI thread could be mid-copyTo on the old Mat
+            // when this thread releases it. The replaced Mats are tiny (~35 points × 8 bytes) and
+            // are reclaimed by OpenCV's native finalizer without meaningful memory pressure.
+            MatOfPoint2f cornersCopy = new MatOfPoint2f();
+            corners.copyTo(cornersCopy);
+            latestFrameSize = new Size(frame.cols(), frame.rows());
+            latestCorners.set(cornersCopy);
+
             Calib3d.drawChessboardCorners(frame, patternSize, corners, true);
             overlayBmp = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(frame, overlayBmp);
+        } else {
+            latestCorners.set(null);
         }
 
         gray.release();

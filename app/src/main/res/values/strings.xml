@@ -40,6 +40,8 @@
     <string name="intrinsics_chessboard_overlay_description">Detected chessboard corners</string>
     <string name="intrinsics_status_searching">Searching for chessboard…</string>
     <string name="intrinsics_status_detected">Chessboard detected ✓</string>
+    <string name="intrinsics_no_detection_toast">No chessboard detected. Adjust position and try again.</string>
+    <string name="intrinsics_invalid_square_size_toast">Enter a valid square size (mm) before capturing.</string>
 
     <!-- Extrinsics calibration -->
     <string name="extrinsics_calibration">Pose Calibration (ArUco)</string>
