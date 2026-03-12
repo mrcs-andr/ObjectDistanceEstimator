@@ -57,4 +57,23 @@
     <string name="extrinsics_no_pose">No pose detected yet.</string>
     <string name="extrinsics_saved">Camera pose saved.</string>
     <string name="extrinsics_overlay_description">Detected ArUco marker with coordinate axes</string>
+
+    <!-- Extrinsics (camera pose) section in IntrinsicsViewActivity -->
+    <string name="intrinsics_view_extrinsics_header">Camera Pose (Extrinsics)</string>
+    <string name="intrinsics_view_extrinsics_none">No extrinsics calibration available.</string>
+    <string name="intrinsics_view_extrinsics_timestamp">Calibrated on: %s</string>
+    <string name="intrinsics_view_camera_x_label">X (m):</string>
+    <string name="intrinsics_view_camera_y_label">Y (m):</string>
+    <string name="intrinsics_view_camera_z_label">Z (m):</string>
+    <string name="intrinsics_view_camera_yaw_label">Yaw (°):</string>
+    <string name="intrinsics_view_camera_pitch_label">Pitch (°):</string>
+    <string name="intrinsics_view_camera_roll_label">Roll (°):</string>
+
+    <!-- Alert distance section in IntrinsicsViewActivity -->
+    <string name="intrinsics_view_alert_distance_header">Alert Distance</string>
+    <string name="intrinsics_view_alert_distance_label">Alert distance (m):</string>
+    <string name="intrinsics_view_alert_distance_hint">e.g. 30.0</string>
+    <string name="intrinsics_view_alert_distance_save">Save</string>
+    <string name="intrinsics_view_alert_distance_saved">Alert distance saved.</string>
+    <string name="intrinsics_view_alert_distance_invalid">Please enter a valid non-negative number.</string>
 </resources>

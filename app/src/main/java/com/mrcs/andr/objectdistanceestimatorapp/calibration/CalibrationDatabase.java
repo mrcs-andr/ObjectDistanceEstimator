@@ -10,10 +10,11 @@ import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 /**
- * Room database for storing camera calibration results.
+ * Room database for storing camera calibration results and application settings.
  */
-@Database(entities = {CalibrationResult.class, ExtrinsicsCalibrationResult.class},
-        version = 5, exportSchema = false)
+@Database(entities = {CalibrationResult.class, ExtrinsicsCalibrationResult.class,
+        AppSettings.class},
+        version = 6, exportSchema = false)
 public abstract class CalibrationDatabase extends RoomDatabase {
 
     private static final String DB_NAME = "calibration_db";
@@ -50,4 +51,10 @@ public abstract class CalibrationDatabase extends RoomDatabase {
      * @return ExtrinsicsCalibrationDao
      */
     public abstract ExtrinsicsCalibrationDao extrinsicsCalibrationDao();
+
+    /**
+     * Returns the DAO for application settings.
+     * @return AppSettingsDao
+     */
+    public abstract AppSettingsDao appSettingsDao();
 }
