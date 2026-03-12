@@ -1,8 +1,13 @@
 package com.mrcs.andr.objectdistanceestimatorapp;
 
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -33,16 +38,26 @@ import org.opencv.core.Size;
 import org.opencv.core.TermCriteria;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class IntrinsicsCalibrationActivity extends AppCompatActivity
         implements IFrameAvailableListener {
 
     private static final String TAG = "IntrinsicsCalibration";
+    /**
+     * Set to {@code true} to enable saving each frame where chessboard corners are detected to the
+     * device's Downloads folder. Intended for debugging only — disabled by default.
+     */
+    private static final boolean DEBUG_SAVE_FRAMES = false;
     private static final int REQUIRED_IMAGE_COUNT = 20;
     private int savedImageCount = 0;
     private TextView tvLabel;
@@ -64,8 +79,10 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
     private final AtomicReference<MatOfPoint2f> latestCorners = new AtomicReference<>(null);
     private volatile Size latestFrameSize = null;
 
+    // Counter for naming debug frames in chronological order
+    private final AtomicInteger debugFrameCounter = new AtomicInteger(0);
+
     // In-memory calibration data accumulated across "Take" presses
-    private final List<Mat> accumulatedImagePoints = new ArrayList<>();
     private final List<Mat> accumulatedObjectPoints = new ArrayList<>();
     private Size calibImageSize = null;
 
@@ -298,6 +315,9 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
             Calib3d.drawChessboardCorners(frame, patternSize, corners, true);
             overlayBmp = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(frame, overlayBmp);
+            if (DEBUG_SAVE_FRAMES) {
+                saveDebugFrame(overlayBmp);
+            }
         } else {
             latestCorners.set(null);
         }
@@ -322,6 +342,65 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
             }
             if (old != null) old.recycle();
         });
+    }
+
+    /**
+     * Saves a debug copy of {@code bmp} (containing the drawn chessboard corners) to the device's
+     * public Downloads folder. This method is only active when {@link #DEBUG_SAVE_FRAMES} is
+     * {@code true}. On API 29+ the file is inserted via {@link MediaStore}; on earlier versions it
+     * is written directly to {@link Environment#DIRECTORY_DOWNLOADS}.
+     *
+     * <p>Failures are logged but never rethrown so they never disrupt the live preview.</p>
+     *
+     * @param bmp The bitmap to persist. Must not be null or recycled.
+     */
+    @SuppressWarnings("deprecation") // Environment.getExternalStoragePublicDirectory used on API < 29
+    private void saveDebugFrame(Bitmap bmp) {
+        String filename = String.format(Locale.US,
+                "calib_debug_%04d.png", debugFrameCounter.incrementAndGet());
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues cv = new ContentValues();
+                cv.put(MediaStore.Downloads.DISPLAY_NAME, filename);
+                cv.put(MediaStore.Downloads.MIME_TYPE, "image/png");
+                cv.put(MediaStore.Downloads.IS_PENDING, 1);
+                Uri uri = getContentResolver().insert(
+                        MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+                if (uri != null) {
+                    try {
+                        try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                            bmp.compress(Bitmap.CompressFormat.PNG, 100, os);
+                        }
+                        cv.clear();
+                        cv.put(MediaStore.Downloads.IS_PENDING, 0);
+                        getContentResolver().update(uri, cv, null, null);
+                        Log.d(TAG, "Debug frame saved via MediaStore: " + filename);
+                    } catch (Exception e) {
+                        // Remove the pending entry so it does not remain incomplete
+                        getContentResolver().delete(uri, null, null);
+                        throw e;
+                    }
+                }
+            } else {
+                File downloadsDir = Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS);
+                if (!downloadsDir.exists()) {
+                    //noinspection ResultOfMethodCallIgnored
+                    downloadsDir.mkdirs();
+                }
+                File out = new File(downloadsDir, filename);
+                try (FileOutputStream fos = new FileOutputStream(out)) {
+                    bmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                } catch (Exception e) {
+                    //noinspection ResultOfMethodCallIgnored
+                    out.delete();
+                    throw e;
+                }
+                Log.d(TAG, "Debug frame saved to: " + out.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to save debug frame: " + e.getMessage(), e);
+        }
     }
 
     /**
