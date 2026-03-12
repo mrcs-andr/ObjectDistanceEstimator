@@ -1,10 +1,15 @@
 package com.mrcs.andr.objectdistanceestimatorapp;
 
 import android.app.AlertDialog;
+import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,20 +25,30 @@ import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationResult;
 import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationRunner;
 import com.mrcs.andr.objectdistanceestimatorapp.calibration.ChessboardDatasetLoader;
 import com.mrcs.andr.objectdistanceestimatorapp.camera.CameraController;
+import com.mrcs.andr.objectdistanceestimatorapp.camera.IFrameAvailableListener;
 
+import org.opencv.android.Utils;
+import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Size;
+import org.opencv.core.TermCriteria;
+import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class IntrinsicsCalibrationActivity extends AppCompatActivity {
+public class IntrinsicsCalibrationActivity extends AppCompatActivity
+        implements IFrameAvailableListener {
 
     private static final String TAG = "IntrinsicsCalibration";
     private static final int REQUIRED_IMAGE_COUNT = 20;
     private int savedImageCount = 0;
     private TextView tvLabel;
+    private TextView tvChessboardStatus;
+    private ImageView ivChessboardOverlay;
     private ProgressBar pbCalibration;
     private Button btnCalibrate;
     private EditText etChessRows;
@@ -41,6 +56,10 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
     private EditText etSquareSize;
     private CameraController cameraController;
     private final ExecutorService calibrationExecutor = Executors.newSingleThreadExecutor();
+
+    private volatile int liveChessRows = 6;
+    private volatile int liveChessCols = 7;
+    private Bitmap lastOverlayBitmap = null;
 
     /**
      * On Create method for the IntrinsicsCalibrationActivity. Sets the content view to the activity_intrinsics_calibration layout.
@@ -56,13 +75,18 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
         this.btnCalibrate = findViewById(R.id.buttonCalibrate);
         this.tvLabel = findViewById(R.id.tvCount);
         this.pbCalibration = findViewById(R.id.progressCalibration);
+        this.tvChessboardStatus = findViewById(R.id.tvChessboardStatus);
+        this.ivChessboardOverlay = findViewById(R.id.ivChessboardOverlay);
 
         //Calibration parameters input fields
         this.etChessCols = findViewById(R.id.etCols);
         this.etChessRows = findViewById(R.id.etRows);
         this.etSquareSize = findViewById(R.id.etSquareSize);
 
-        this.cameraController = new CameraController(this, this, null, previewView);
+        bindIntField(etChessRows, v -> liveChessRows = v, 6);
+        bindIntField(etChessCols, v -> liveChessCols = v, 7);
+
+        this.cameraController = new CameraController(this, this, this, previewView);
         this.cameraController.setMode(CameraController.Mode.CAPTURE);
         this.cameraController.start();
         bntCapture.setOnClickListener(v -> onTakeClicked());
@@ -255,5 +279,79 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity {
         CalibrationResult result = new CalibrationResult(fx, fy, cx, cy, k1, k2, p1, p2, k3,
                 r.reprojectionError, System.currentTimeMillis());
         return result;
+    }
+
+    /**
+     * Processes each live camera frame: detects chessboard corners and draws them on the preview overlay.
+     * This allows the user to visually confirm whether the chessboard pattern is correctly detected before capturing.
+     */
+    @Override
+    public void onFrameAvailable(Bitmap bmp) {
+        int cols = liveChessCols;
+        int rows = liveChessRows;
+        if (cols <= 0 || rows <= 0) return;
+
+        Mat frame = new Mat();
+        Utils.bitmapToMat(bmp, frame);
+
+        Mat gray = new Mat();
+        Imgproc.cvtColor(frame, gray, Imgproc.COLOR_RGBA2GRAY);
+
+        Size patternSize = new Size(cols, rows);
+        MatOfPoint2f corners = new MatOfPoint2f();
+        boolean found = Calib3d.findChessboardCorners(gray, patternSize, corners,
+                Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE);
+
+        Bitmap overlayBmp = null;
+        if (found) {
+            Imgproc.cornerSubPix(gray, corners, new Size(11, 11), new Size(-1, -1),
+                    new TermCriteria(TermCriteria.EPS + TermCriteria.MAX_ITER, 30, 0.001));
+            Calib3d.drawChessboardCorners(frame, patternSize, corners, true);
+            overlayBmp = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(frame, overlayBmp);
+        }
+
+        gray.release();
+        corners.release();
+        frame.release();
+
+        final Bitmap finalOverlayBmp = overlayBmp;
+        runOnUiThread(() -> {
+            Bitmap old = lastOverlayBitmap;
+            if (finalOverlayBmp != null) {
+                lastOverlayBitmap = finalOverlayBmp;
+                ivChessboardOverlay.setImageBitmap(finalOverlayBmp);
+                ivChessboardOverlay.setVisibility(View.VISIBLE);
+                tvChessboardStatus.setText(R.string.intrinsics_status_detected);
+            } else {
+                lastOverlayBitmap = null;
+                ivChessboardOverlay.setImageBitmap(null);
+                ivChessboardOverlay.setVisibility(View.INVISIBLE);
+                tvChessboardStatus.setText(R.string.intrinsics_status_searching);
+            }
+            if (old != null) old.recycle();
+        });
+    }
+
+    /**
+     * Attaches a {@link TextWatcher} to an {@link EditText} that writes the parsed integer value
+     * to the given consumer. Falls back to {@code defaultValue} on parse errors.
+     */
+    private void bindIntField(EditText et, IntConsumer consumer, int defaultValue) {
+        consumer.accept(defaultValue);
+        et.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+            @Override public void onTextChanged(CharSequence s, int st, int b, int c) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                try {
+                    consumer.accept(Integer.parseInt(s.toString()));
+                } catch (NumberFormatException ignored) {}
+            }
+        });
+    }
+
+    private interface IntConsumer {
+        void accept(int value);
     }
 }

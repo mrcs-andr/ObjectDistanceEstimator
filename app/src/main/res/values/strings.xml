@@ -36,6 +36,11 @@
     <string name="intrinsics_view_p2_label">p2:</string>
     <string name="intrinsics_view_rms_label">RMS error:</string>
 
+    <!-- Intrinsics calibration overlay -->
+    <string name="intrinsics_chessboard_overlay_description">Detected chessboard corners</string>
+    <string name="intrinsics_status_searching">Searching for chessboard…</string>
+    <string name="intrinsics_status_detected">Chessboard detected ✓</string>
+
     <!-- Extrinsics calibration -->
     <string name="extrinsics_calibration">Pose Calibration (ArUco)</string>
     <string name="title_activity_extrinsics_calibration">Pose Calibration</string>
