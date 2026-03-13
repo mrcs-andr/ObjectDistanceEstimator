@@ -85,6 +85,9 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
     // In-memory calibration data accumulated across "Take" presses
     private final List<Mat> accumulatedObjectPoints = new ArrayList<>();
     private Size calibImageSize = null;
+    private final List<Mat> accumulatedImagePoints = new ArrayList<>();
+
+    private Button bntCapture;
 
     /**
      * On Create method for the IntrinsicsCalibrationActivity. Sets the content view to the activity_intrinsics_calibration layout.
@@ -95,7 +98,7 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_intrinsics_calibration);
         PreviewView previewView = findViewById(R.id.intrinsicsPreviewView);
-        Button bntCapture = findViewById(R.id.buttonTakePicture);
+        this.bntCapture = findViewById(R.id.buttonTakePicture);
         Button bntClear = findViewById(R.id.buttonClearPictures);
         this.btnCalibrate = findViewById(R.id.buttonCalibrate);
         this.tvLabel = findViewById(R.id.tvCount);
@@ -108,8 +111,8 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
         this.etChessRows = findViewById(R.id.etRows);
         this.etSquareSize = findViewById(R.id.etSquareSize);
 
-        bindIntField(etChessRows, v -> liveChessRows = v, 6);
-        bindIntField(etChessCols, v -> liveChessCols = v, 7);
+        bindIntField(etChessRows, v -> liveChessRows = (v-1), 8);
+        bindIntField(etChessCols, v -> liveChessCols = (v-1), 11);
 
         this.cameraController = new CameraController(this, this, this, previewView);
         this.cameraController.setMode(CameraController.Mode.ANALYSIS);
@@ -315,11 +318,20 @@ public class IntrinsicsCalibrationActivity extends AppCompatActivity
             Calib3d.drawChessboardCorners(frame, patternSize, corners, true);
             overlayBmp = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(frame, overlayBmp);
-            if (DEBUG_SAVE_FRAMES) {
-                saveDebugFrame(overlayBmp);
-            }
+            runOnUiThread(() ->{
+                this.bntCapture.setEnabled(true);
+            });
+
         } else {
+            if (DEBUG_SAVE_FRAMES) {
+                Bitmap grayBmp = Bitmap.createBitmap(gray.cols(), gray.rows(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(gray, grayBmp);
+                saveDebugFrame(grayBmp);
+            }
             latestCorners.set(null);
+            runOnUiThread(() ->{
+                this.bntCapture.setEnabled(false);
+            });
         }
 
         gray.release();

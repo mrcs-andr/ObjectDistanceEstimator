@@ -11,10 +11,10 @@
     <string name="calibration_failed_message">Calibration failed: %s</string>
     <string name="camera_height_label">Camera height (m):</string>
     <string name="camera_height_hint">e.g. 1.5</string>
-    <string name="camera_pitch_label">Camera pitch (°):</string>
+    <string name="camera_pitch_label">Camera Pitch (°):</string>
     <string name="camera_pitch_hint">e.g. 0.0</string>
 
-    <string name="calibration_rows_cols_label">Board rows and columns:</string>
+    <string name="calibration_rows_cols_label">Rows, Columns:</string>
     <string name="calibration_rows_cols_hint">e.g. 6x7</string>
     <string name="calibration_square_size_label">Square size (mm):</string>
     <string name="calibration_square_size_hint">e.g. 25.0</string>
@@ -48,13 +48,13 @@
     <string name="title_activity_extrinsics_calibration">Pose Calibration</string>
     <string name="extrinsics_marker_size_label">Marker size (m):</string>
     <string name="extrinsics_marker_size_hint">e.g. 0.15</string>
-    <string name="extrinsics_marker_world_section">Marker world position (optional)</string>
-    <string name="extrinsics_marker_world_x_label">Marker X (m):</string>
-    <string name="extrinsics_marker_world_y_label">Marker Y (m):</string>
-    <string name="extrinsics_marker_world_z_label">Marker Z (m):</string>
-    <string name="extrinsics_marker_world_yaw_label">Marker Yaw (°):</string>
-    <string name="extrinsics_marker_world_pitch_label">Marker Pitch (°):</string>
-    <string name="extrinsics_marker_world_roll_label">Marker Roll (°):</string>
+    <string name="extrinsics_marker_world_section">Marker world position (Meters/Degrees)</string>
+    <string name="extrinsics_marker_world_x_label">X:</string>
+    <string name="extrinsics_marker_world_y_label">Y:</string>
+    <string name="extrinsics_marker_world_z_label">Z:</string>
+    <string name="extrinsics_marker_world_yaw_label">Yaw:</string>
+    <string name="extrinsics_marker_world_pitch_label">Pitch:</string>
+    <string name="extrinsics_marker_world_roll_label">Roll:</string>
     <string name="extrinsics_marker_coord_hint">e.g. 0.0</string>
     <string name="extrinsics_marker_angle_hint">e.g. 0.0</string>
     <string name="extrinsics_save_button">Save Pose</string>

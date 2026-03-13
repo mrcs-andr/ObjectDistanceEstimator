@@ -112,10 +112,29 @@
 
                 <EditText
                     android:id="@+id/etMarkerWorldX"
+                    android:layout_marginStart="5dp"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="@string/extrinsics_marker_coord_hint"
+                    android:inputType="numberDecimal|numberSigned"
+                    android:text="0.0"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#AAAAAA" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.1"
+                    android:text="@string/extrinsics_marker_world_roll_label"
+                    android:textColor="@android:color/white" />
+
+                <EditText
+                    android:id="@+id/etMarkerWorldRoll"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/extrinsics_marker_angle_hint"
                     android:inputType="numberDecimal|numberSigned"
                     android:text="0.0"
                     android:textColor="@android:color/white"
@@ -148,6 +167,24 @@
                     android:textColor="@android:color/white"
                     android:textColorHint="#AAAAAA" />
 
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.1"
+                    android:text="@string/extrinsics_marker_world_pitch_label"
+                    android:textColor="@android:color/white" />
+
+                <EditText
+                    android:id="@+id/etMarkerWorldPitch"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/extrinsics_marker_angle_hint"
+                    android:inputType="numberDecimal|numberSigned"
+                    android:text="0.0"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#AAAAAA" />
+
             </LinearLayout>
 
             <!-- Marker world Z -->
@@ -175,19 +212,10 @@
                     android:textColor="@android:color/white"
                     android:textColorHint="#AAAAAA" />
 
-            </LinearLayout>
-
-            <!-- Marker world Yaw -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingTop="2dp">
-
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_weight="1.1"
                     android:text="@string/extrinsics_marker_world_yaw_label"
                     android:textColor="@android:color/white" />
 
@@ -203,59 +231,6 @@
                     android:textColorHint="#AAAAAA" />
 
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingTop="2dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/extrinsics_marker_world_pitch_label"
-                    android:textColor="@android:color/white" />
-
-                <EditText
-                    android:id="@+id/etMarkerWorldPitch"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="@string/extrinsics_marker_angle_hint"
-                    android:inputType="numberDecimal|numberSigned"
-                    android:text="0.0"
-                    android:textColor="@android:color/white"
-                    android:textColorHint="#AAAAAA" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingTop="2dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/extrinsics_marker_world_roll_label"
-                    android:textColor="@android:color/white" />
-
-                <EditText
-                    android:id="@+id/etMarkerWorldRoll"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="@string/extrinsics_marker_angle_hint"
-                    android:inputType="numberDecimal|numberSigned"
-                    android:text="0.0"
-                    android:textColor="@android:color/white"
-                    android:textColorHint="#AAAAAA" />
-
-            </LinearLayout>
-
 
             <Button
                 android:id="@+id/btnSavePose"
