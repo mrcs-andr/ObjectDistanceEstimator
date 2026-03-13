@@ -12,6 +12,8 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * Estimates the distance from the camera to a detected object using a ground-plane (z = 0)
  * intersection model.
@@ -22,18 +24,31 @@ import org.opencv.core.Point;
  * camera matrix and distortion coefficients, then back-projected to a ray in world space.
  * The intersection of that ray with the ground plane (world Z = 0 when extrinsics are set,
  * world Y = 0 for legacy intrinsics-only mode) gives the 3-D position of the foot of the
- * object, and the Euclidean distance to that point is returned in metres.</p>
+ * object.</p>
  *
  * <p>When an {@link ExtrinsicsCalibrationResult} is set the full 6-DOF rotation matrix
  * (reconstructed from yaw/pitch/roll using the ZYX convention) is used so that any
- * camera orientation is handled correctly.  When only intrinsics are available the
+ * camera orientation is handled correctly. The returned distance is the horizontal
+ * (ground-plane) distance from a configurable world-frame origin to the ground intersection
+ * point of the detection ray. The origin defaults to (0, 0, 0) and can be changed via
+ * {@link #setOrigin(double, double, double)}. When only intrinsics are available the
  * legacy pitch-only model is used as a fallback.</p>
  */
 public class DistanceEstimator implements ILetterBoxObserver {
 
+    /** Immutable snapshot of the world-frame origin used for ground-plane distance measurement. */
+    private static final class Origin {
+        final double x;
+        final double y;
+        final double z;
+        Origin(double x, double y, double z) { this.x = x; this.y = y; this.z = z; }
+    }
+
     private volatile CalibrationResult calibration;
     private volatile LetterBoxParams letterBoxParams;
     private volatile ExtrinsicsCalibrationResult extrinsics;
+
+    private final AtomicReference<Origin> origin = new AtomicReference<>(new Origin(0.0, 0.0, 0.0));
 
     /**
      * Updates the camera calibration used for distance estimation.
@@ -58,6 +73,23 @@ public class DistanceEstimator implements ILetterBoxObserver {
     }
 
     /**
+     * Sets the world-frame origin from which ground-plane distances are measured.
+     * Defaults to (0, 0, 0) if never called.
+     * Safe to call from any thread.
+     *
+     * <p>Note: the {@code z} component is stored for completeness but is not used in the
+     * horizontal ground-plane distance calculation (which measures only in the XY plane,
+     * i.e. {@code z = 0}).</p>
+     *
+     * @param x origin X coordinate in world frame (metres)
+     * @param y origin Y coordinate in world frame (metres)
+     * @param z origin Z coordinate in world frame (metres, typically 0 for ground level)
+     */
+    public void setOrigin(double x, double y, double z) {
+        origin.set(new Origin(x, y, z));
+    }
+
+    /**
      * {@inheritDoc}
      *
      * <p>Stores the latest letterbox parameters so that model-space bounding-box coordinates
@@ -69,15 +101,23 @@ public class DistanceEstimator implements ILetterBoxObserver {
     }
 
     /**
-     * Estimates the 3-D Euclidean distance from the camera to the foot of a detected object
-     * (i.e. the bottom-centre of the bounding box projected onto the ground plane).
+     * Estimates the horizontal (ground-plane) distance from the configured world-frame origin
+     * to the foot of a detected object (i.e. the bottom-centre of the bounding box projected
+     * onto the ground plane Z = 0).
      *
      * <p>Uses {@link Calib3d#undistortPoints} to correct lens distortion before computing
      * the ground-plane ray intersection, ensuring the stored distortion coefficients
      * (k1, k2, p1, p2, k3) are taken into account.</p>
      *
+     * <p>When extrinsics are available the full camera translation
+     * (cameraX, cameraY, cameraZ) is used to compute the world-space ground intersection
+     * point, and the returned value is the 2-D Euclidean distance in the XY ground plane
+     * from the origin set via {@link #setOrigin(double, double, double)} (default (0,0,0))
+     * to that point.</p>
+     *
      * @param d detection in model space (coordinates in the letterboxed 512x512 input space)
-     * @return distance in metres, or {@link Float#NaN} if calibration / letterbox params are not
+     * @return horizontal ground-plane distance in metres from origin to the detected object's
+     *         footpoint, or {@link Float#NaN} if calibration / letterbox params are not
      *         yet available, or if the ray does not intersect the ground plane
      */
     public float estimate(Detection d) {
@@ -152,7 +192,15 @@ public class DistanceEstimator implements ILetterBoxObserver {
             if (dwz >= 0) return Float.NaN;
             double t = -h / dwz;
 
-            return (float) (t * Math.sqrt(dwx*dwx + dwy*dwy + dwz*dwz));
+            // World-space ground intersection point
+            double px = ext.cameraX + t * dwx;
+            double py = ext.cameraY + t * dwy;
+
+            // Horizontal (ground-plane) distance from the configured origin
+            Origin o = origin.get();
+            double dx = px - o.x;
+            double dy = py - o.y;
+            return (float) Math.sqrt(dx * dx + dy * dy);
         } else {
             // --- Legacy pitch-only path (Y-up world, intrinsics fallback) ---
             double h = 10; //TODO: revisit to check the values.
