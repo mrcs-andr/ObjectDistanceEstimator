@@ -22,6 +22,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.mrcs.andr.objectdistanceestimatorapp.calibration.AppSettings;
 import com.mrcs.andr.objectdistanceestimatorapp.calibration.CalibrationDatabase;
 import com.mrcs.andr.objectdistanceestimatorapp.interpreter.ModelObserver;
 import com.mrcs.andr.objectdistanceestimatorapp.postprocessing.Detection;
@@ -164,16 +165,22 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
     /**
      * On Resume Activity lifecycle event. Checks whether intrinsics calibration
      * has been performed and refreshes the options menu accordingly.
+     * Also loads the configured alert distance and applies it to the overlay.
      */
     @Override
     protected void onResume() {
         super.onResume();
         dbExecutor.execute(() -> {
-            boolean hasCalibration = CalibrationDatabase.getInstance(getApplicationContext())
-                    .calibrationDao().getLatest() != null;
+            CalibrationDatabase db = CalibrationDatabase.getInstance(getApplicationContext());
+            boolean hasCalibration = db.calibrationDao().getLatest() != null;
+            AppSettings settings = db.appSettingsDao().get();
+            float alertDistance = (settings != null)
+                    ? (float) settings.alertDistance
+                    : (float) AppSettings.DEFAULT_ALERT_DISTANCE;
             runOnUiThread(() -> {
                 hasIntrinsicsCalibration = hasCalibration;
                 invalidateOptionsMenu();
+                detectionOverlayView.setWarningDistance(alertDistance);
             });
         });
     }
