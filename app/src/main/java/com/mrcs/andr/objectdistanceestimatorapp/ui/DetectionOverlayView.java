@@ -24,6 +24,9 @@ import java.util.List;
 
 public class DetectionOverlayView extends View {
 
+    private static final int DEFAULT_BOX_COLOR = Color.GREEN;
+    private static final int WARNING_BOX_COLOR = Color.RED;
+
     private final List<Detection> detections = new ArrayList<>();
     private final Paint boxPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -34,6 +37,7 @@ public class DetectionOverlayView extends View {
     private float lbScale;  //Scale factor used in letterboxing
     private float lbPadX; //Letterbox x padding.
     private float lbPadY; //Letterbox y padding.
+    private float warningDistance = Float.NaN; // NaN means no warning threshold configured
 
     public DetectionOverlayView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -46,7 +50,7 @@ public class DetectionOverlayView extends View {
     }
 
     private void init() {
-        boxPaint.setColor(Color.GREEN);
+        boxPaint.setColor(DEFAULT_BOX_COLOR);
         boxPaint.setStyle(Paint.Style.STROKE);
         boxPaint.setStrokeWidth(4f);
 
@@ -62,6 +66,16 @@ public class DetectionOverlayView extends View {
         this.lbPadY = params.padY;
         this.analysisWidth = params.analysisImageWidth;
         this.analysisHeight = params.analysisImageHeight;
+    }
+
+    /**
+     * Sets the warning distance threshold. When a detection's distance is less than this value,
+     * its bounding box is drawn in red instead of the default color.
+     * @param warningDistance distance threshold in metres; use {@link Float#NaN} to disable.
+     */
+    public void setWarningDistance(float warningDistance) {
+        this.warningDistance = warningDistance;
+        postInvalidateOnAnimation();
     }
 
     public void setDetections(List<Detection> newDetections) {
@@ -161,6 +175,8 @@ public class DetectionOverlayView extends View {
 
             if (!RectF.intersects(mapped, viewBounds)) continue;
 
+            boolean isWarning = !Float.isNaN(warningDistance) && !Float.isNaN(d.distanceMeters) && d.distanceMeters < warningDistance;
+            boxPaint.setColor(isWarning ? WARNING_BOX_COLOR : DEFAULT_BOX_COLOR);
             canvas.drawRect(mapped, boxPaint);
 
             String label = safeLabel(d);
