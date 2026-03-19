@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -92,8 +93,8 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
             v.setTranslationY(systemBars.top + 16);
             return insets;
         });
-
          */
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         requestCameraPermission();
     }
 
@@ -232,6 +233,7 @@ public class MainActivity extends AppCompatActivity implements IDetectionUpdated
             this.appContainer.destroy();
         }
         dbExecutor.shutdown();
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     /**

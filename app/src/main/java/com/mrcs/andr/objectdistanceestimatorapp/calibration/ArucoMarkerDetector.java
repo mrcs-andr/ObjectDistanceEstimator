@@ -13,6 +13,7 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
+import org.opencv.core.Core;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.ArucoDetector;
 import org.opencv.objdetect.DetectorParameters;
@@ -129,6 +130,56 @@ public class ArucoMarkerDetector {
     }
 
     /**
+     * Helper method to build the world-to-marker transform T_wm from the marker's top-left
+     * @param xTL x position of the marker's top-left corner in world coordinates (metres)
+     * @param yTL y position of the marker's top-left corner in world coordinates (metres)
+     * @param zTL z position of the marker's top-left corner in world coordinates (metres)
+     * @param yawDeg yaw rotation of the marker in world frame (degrees, rotation around Z)
+     * @param pitchDeg pitch rotation of the marker in world frame (degrees, rotation around Y)
+     * @param rollDeg roll rotation of the marker in world frame (degrees, rotation around X)
+     * @param markerLen physical side length of the marker (metres)
+     * @return 4x4 homogeneous transform T_wm from marker frame to world frame, where the marker's
+     */
+    public Mat buildT_wmFromTL_XYZ_YPR_Deg(
+            double xTL, double yTL, double zTL,
+            double yawDeg, double pitchDeg, double rollDeg,
+            double markerLen
+    ) {
+
+        // 2) Marker World Rotation, euler angles, comes from interface.
+        Mat R_wm = Rotations.eulerZYXToRotationMatrix(yawDeg, pitchDeg, rollDeg );
+
+        // 3) Tl Translation in world frame, comes from interface.
+        Mat t_w_TL = new Mat(3, 1, CvType.CV_64F);
+        t_w_TL.put(0, 0, xTL);
+        t_w_TL.put(1, 0, yTL);
+        t_w_TL.put(2, 0, zTL);
+
+        // 4) TL -> Marker center.
+        double half = markerLen * 0.5;
+        Mat d_M = new Mat(3, 1, CvType.CV_64F);
+        d_M.put(0, 0, 0.0);
+        d_M.put(1, 0, -half);
+        d_M.put(2, 0, -half);
+
+        // 5) t_w_center = t_w_TL + R_wm * d_M
+        Mat Rwm_dM = new Mat();
+        Core.gemm(R_wm, d_M, 1.0, new Mat(), 0.0, Rwm_dM);
+
+        Mat t_w_center = new Mat();
+        Core.add(t_w_TL, Rwm_dM, t_w_center);
+
+        // 6) Create T_wm.
+        Mat T_wm = Mat.eye(4, 4, CvType.CV_64F);
+        R_wm.copyTo(T_wm.submat(0, 3, 0, 3));
+        t_w_center.copyTo(T_wm.submat(0, 3, 3, 4));
+
+        return T_wm;
+    }
+
+
+
+    /**
      * Detects ArUco markers in the given frame and estimates the full 6-DOF camera
      * pose from the first detected marker.
      *
@@ -202,64 +253,52 @@ public class ArucoMarkerDetector {
                 new org.opencv.core.Point(firstCorners.get(0, 3)[0], firstCorners.get(0, 3)[1])
         );
 
+        //Get Marker pose relative to camera (rotation vector rvec and translation vector tvec)
         Mat rvec = new Mat();
         Mat tvec = new Mat();
         Calib3d.solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
 
-        // Rotation matrix Rm (world-to-camera, in marker frame)
-        Mat rotMat = new Mat();
-        Calib3d.Rodrigues(rvec, rotMat);
+        //Get the camera pose in the marker frame.
+        Mat R_cm = new Mat();
+        Calib3d.Rodrigues(rvec, R_cm);
+        Mat R_mc = R_cm.t(); // camera-to-marker rotation
+        Mat t_mc = new Mat();  // camera position in marker frame: C_m = -R_mc * tvec
+        Core.gemm(R_mc, tvec, -1.0, new Mat(), 0.0, t_mc);
 
-        double tx = tvec.get(0, 0)[0];
-        double ty = tvec.get(1, 0)[0];
-        double tz = tvec.get(2, 0)[0];
+        //Get marker in world frame transform T_wm from the marker's top-left corner position and full orientation.
+        Mat T_wm = buildT_wmFromTL_XYZ_YPR_Deg(
+                markerWorldX, markerWorldY, markerWorldZ,
+                markerWorldYaw, markerWorldPitch, markerWorldRoll,
+                markerSizeM);
 
-        // --- Camera position in marker frame: Cm = -Rm^T * t ---
-        // (Rm^T * t).i = sum_j Rm[j][i] * t[j]
-        double camX_m = -(r(rotMat,0,0)*tx + r(rotMat,1,0)*ty + r(rotMat,2,0)*tz);
-        double camY_m = -(r(rotMat,0,1)*tx + r(rotMat,1,1)*ty + r(rotMat,2,1)*tz);
-        double camZ_m = -(r(rotMat,0,2)*tx + r(rotMat,1,2)*ty + r(rotMat,2,2)*tz);
+        //Get camera in world frame transform T_wc = T_wm * T_mc
+        // Build ^M T_C (camera in marker) as 4x4
+        Mat T_mc = Mat.eye(4, 4, CvType.CV_64F);
+        R_mc.convertTo(R_mc, CvType.CV_64F);
+        t_mc.convertTo(t_mc, CvType.CV_64F);
+        R_mc.copyTo(T_mc.submat(0, 3, 0, 3));
+        t_mc.copyTo(T_mc.submat(0, 3, 3, 4));
 
-        // --- Transform to global world frame using full marker orientation ---
-        // R_marker = Rz(yaw) * Ry(pitch) * Rx(roll)
-        double mYaw   = Math.toRadians(markerWorldYaw);
-        double mPitch = Math.toRadians(markerWorldPitch);
-        double mRoll  = Math.toRadians(markerWorldRoll);
-        double cy = Math.cos(mYaw),   sy = Math.sin(mYaw);
-        double cp = Math.cos(mPitch), sp = Math.sin(mPitch);
-        double cr = Math.cos(mRoll),  sr = Math.sin(mRoll);
+        // Compose: ^W T_C = ^W T_M * ^M T_C
+        Mat T_wc = new Mat();
+        Core.gemm(T_wm, T_mc, 1.0, new Mat(), 0.0, T_wc);
 
-        // R_marker rows:
-        //   [cy*cp,  cy*sp*sr - sy*cr,  cy*sp*cr + sy*sr]
-        //   [sy*cp,  sy*sp*sr + cy*cr,  sy*sp*cr - cy*sr]
-        //   [-sp,    cp*sr,             cp*cr            ]
-        double rm00 = cy*cp,  rm01 = cy*sp*sr - sy*cr,  rm02 = cy*sp*cr + sy*sr;
-        double rm10 = sy*cp,  rm11 = sy*sp*sr + cy*cr,  rm12 = sy*sp*cr - cy*sr;
-        double rm20 = -sp,    rm21 = cp*sr,              rm22 = cp*cr;
+        // R_wc = T[0:3, 0:3]
+        Mat R_wc = T_wc.submat(0, 3, 0, 3).clone();
+        R_wc.convertTo(R_wc, CvType.CV_64F);
 
-        double camX_w = rm00*camX_m + rm01*camY_m + rm02*camZ_m + markerWorldX;
-        double camY_w = rm10*camX_m + rm11*camY_m + rm12*camZ_m + markerWorldY;
-        double camZ_w = rm20*camX_m + rm21*camY_m + rm22*camZ_m + markerWorldZ;
+        // t_wc = T[0:3, 3]
+        Mat t_wc = T_wc.submat(0, 3, 3, 4).clone(); // 3x1
+        t_wc.convertTo(t_wc, CvType.CV_64F);
 
-        // --- Camera-to-world rotation in global frame: W = R_marker * Rm^T ---
-        // W[row][col] = sum_k R_marker[row][k] * Rm^T[k][col]
-        //             = sum_k R_marker[row][k] * Rm[col][k]
-        //
-        // For col = 0: used for yaw / pitch
-        double w00 = rm00*r(rotMat,0,0) + rm01*r(rotMat,0,1) + rm02*r(rotMat,0,2);
-        double w10 = rm10*r(rotMat,0,0) + rm11*r(rotMat,0,1) + rm12*r(rotMat,0,2);
-        double w20 = rm20*r(rotMat,0,0) + rm21*r(rotMat,0,1) + rm22*r(rotMat,0,2);
-        // For col = 1: used for roll
-        double w21 = rm20*r(rotMat,1,0) + rm21*r(rotMat,1,1) + rm22*r(rotMat,1,2);
-        // For col = 2: used for roll
-        double w22 = rm20*r(rotMat,2,0) + rm21*r(rotMat,2,1) + rm22*r(rotMat,2,2);
+        double camX_w = t_wc.get(0, 0)[0];
+        double camY_w = t_wc.get(1, 0)[0];
+        double camZ_w = t_wc.get(2, 0)[0];
 
-        // --- Extract ZYX Euler angles from W (R_c2w in global frame) ---
-        // W = Rz(yaw) * Ry(pitch) * Rx(roll)
-        // pitch = asin(-W[2][0]),  yaw = atan2(W[1][0], W[0][0]),  roll = atan2(W[2][1], W[2][2])
-        double cameraPitch = Math.toDegrees(Math.asin(-clamp(w20, -1.0, 1.0)));
-        double cameraYaw   = Math.toDegrees(Math.atan2(w10, w00));
-        double cameraRoll  = Math.toDegrees(Math.atan2(w21, w22));
+        List<Double> eulerZYX = Rotations.RMatToEulerZYX(R_wc);
+        double cameraYaw = eulerZYX.get(0);
+        double cameraPitch = eulerZYX.get(1);
+        double cameraRoll = eulerZYX.get(2);
 
         // Draw detected marker outline and coordinate axes onto the frame.
         // The frame is owned by the caller and released after this method returns,
@@ -272,14 +311,16 @@ public class ArucoMarkerDetector {
         Utils.matToBitmap(frame, overlayBitmap);
 
         // Release resources
+        grayFrame.release();
         cameraMatrix.release();
         distCoeffs.release();
         objectPoints.release();
         imagePoints.release();
         rvec.release();
         tvec.release();
-        rotMat.release();
-        grayFrame.release();
+        R_cm.release();
+        t_mc.release();
+        T_wc.release();
         ids.release();
         releaseAll(corners);
         releaseAll(rejected);

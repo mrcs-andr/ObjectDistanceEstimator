@@ -200,6 +200,9 @@ public class DetectionOverlayView extends View {
         if (!Float.isNaN(d.distanceMeters)) {
             return String.format("%s %.1fm", name, d.distanceMeters);
         }
-        return name;
+        else{
+            return String.format("%s %.1fm", name, -1.0f);
+        }
+        //return name;
     }
 }
